@@ -1,0 +1,11 @@
+flask
+flask-cors
+python-dotenv
+google-api-python-client
+pymongo
+huggingface-hub
+nltk
+scikit-learn
+numpy
+PyPDF2
+python-docx
