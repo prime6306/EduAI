@@ -1,0 +1,27 @@
+[
+  {
+    "rank": 1,
+    "distance": 2.740880012512207,
+    "text": "ring data from one machine to another via a network is to uniquely identify each of the machines. The IoT requires a unique name for each of the “things” on the network. Network protocols  are a set of rules that define \nhow computers identify each other. Broadly, network protocols can be proprietary or open. Proprietary network protocols allow identification and authorization to machines with specific hardware and software, making customization easier and allowing manufac-turers to differentiate their offerings. Open protocols allow interoperability across hetero-geneous devices, thus improving scalability.\n26  \nInternet Protocol (IP) is an open proto-"
+  },
+  {
+    "rank": 2,
+    "distance": 2.8001327514648438,
+    "text": "• Network protocols: Network protocols refer to a set of rules by which machines identify and authorize each other. Interoperability issues result from multiple network protocols in existence. In recent years, companies in the IoT value chain have begun working together to help align multiple network protocols. One example is the AllJoyn standard established by Qualcomm in late 2013 that allows devices to discover, connect, and communicate directly with other AllJoyn-enabled prod-ucts connected to different technologies such as Wi-Fi, Ethernet, and possibly Bluetooth and ZigBee.\n53 \n• Communication protocols: Once devices are connected to a network  and they iden-"
+  },
+  {
+    "rank": 3,
+    "distance": 2.856900453567505,
+    "text": "Weightless connections appear to be better- suited for delivering short messages in wide-spread machine-to-machine communications. \nFactors driving adoption \nwithin the IoT\nNetworks are able to transfer data at higher \nspeeds, at lower costs, and with lower energy requirements than ever before. Also, with the introduction of IPv6, the number of connected devices is rising rapidly. As a result, we are seeing an increasingly diverse composition of connected devices, from laptops and smart-phones to home appliances, vehicles, traffic signals, and wind turbines. Such diversity in the nature of connected devices is driving a wider-scale adoption of an extensive range of network technologies."
+  },
+  {
+    "rank": 4,
+    "distance": 2.9236979484558105,
+    "text": "Data transfer rates and energy requirements \nare two key considerations when selecting a network technology for a given application. Technologies such as 4G (LTE, LTE-A) and 5G are favorable for IoT applications, given their high data transfer rates. Technologies such as Bluetooth Low Energy and Low Power Wi-Fi are well suited for energy-constrained devices. \nBelow, we discuss select wireless net-\nwork technologies that could be used for IoT applications. For each of the following tech-nologies, we discuss bandwidth rates, recent advances, and limitations. The technologies discussed below are representative, and the choice of an appropriate technology depends on the application at hand and the features of that technology. \nBluetooth and Bluetooth \nLow Energy \nIntroduced in 1999, Bluetooth technology \nis a wireless technology known for its ability to \ntransfer data over short distances in personal area networks."
+  },
+  {
+    "rank": 5,
+    "distance": 2.92881441116333,
+    "text": "53 \n• Communication protocols: Once devices are connected to a network  and they iden-\ntify each other, communication protocols (a set of rules) provide a common language for devices to communicate. Various com-munication protocols are used for device-to-device communication; broadly, they vary in the format in which data packets are transferred. There are ongoing efforts to identify protocols better suited to IoT applications. Toward that end, we earlier discussed the advantages and limitations of the Constrained Application Protocol, a communication protocol lighter than other popular protocols such as HTTP .\n• Data aggregation standards: Data col-lected from multiple devices come in different formats and at different sampling rates—that is, the frequency at which data are collected. One set of data-aggregation tools— Extraction, Transformation, \nLoading (ETL) tools—aggregate, process, and store data in a format that can be used for analytics applications (see fig-ure 11)."
+  }
+]
