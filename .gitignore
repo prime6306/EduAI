@@ -1,0 +1,48 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Models & large files (commit to Git LFS or store separately)
+models/*.pkl
+models/*.pth
+models/*.p
+models/*.index
+models/*.npy
+
+# Data
+uploads/
+chromadb_data/
+mlflow_data/
+*.xlsx
+*.csv
+datalogger.xlsx
+
+# Secrets
+serviceAccountKey.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.override.yml
+
+# Streamlit
+.streamlit/secrets.toml

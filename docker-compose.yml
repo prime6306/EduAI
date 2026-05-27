@@ -1,0 +1,83 @@
+version: "3.9"
+
+services:
+
+  # ── FastAPI Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: eduai_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - CHROMA_PATH=/app/chromadb_data
+      - ANTISPOOF_MODEL_PATH=/app/models/antispoof_fullmodels.pkl
+      - FACE_ENCODINGS_PATH=/app/models/ENcodedFile.p
+      - MLFLOW_TRACKING_URI=http://mlflow:5001
+    volumes:
+      - ./chromadb_data:/app/chromadb_data
+      - ./models:/app/models
+      - ./uploads:/app/uploads
+      - ./mlflow_data:/app/mlflow_data
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Streamlit Frontend ───────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: eduai_frontend
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── MongoDB (local dev only — use Atlas in prod) ─────────
+  mongodb:
+    image: mongo:7.0
+    container_name: eduai_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: eduai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── MLflow Tracking Server ───────────────────────────────
+  mlflow:
+    image: python:3.11-slim
+    container_name: eduai_mlflow
+    command: >
+      bash -c "pip install mlflow -q &&
+               mlflow server --host 0.0.0.0 --port 5001
+               --backend-store-uri /mlflow/mlruns
+               --default-artifact-root /mlflow/artifacts"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./mlflow_data:/mlflow
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
