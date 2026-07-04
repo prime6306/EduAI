@@ -6,7 +6,13 @@ Includes similarity threshold, hallucination scoring, Q&A recommendations.
 from datetime import datetime
 
 from groq import Groq
-from sentence_transformers import SentenceTransformer
+
+def _get_embedder() -> "SentenceTransformer":
+    global _embedder
+    if _embedder is None:
+        from sentence_transformers import SentenceTransformer
+        _embedder = SentenceTransformer(get_settings().embedding_model)
+    return _embedder
 
 from backend.config import get_settings
 from backend.db.chromadb_client import get_collection
