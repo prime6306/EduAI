@@ -24,7 +24,14 @@ import numpy as np
 from groq import Groq
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from sentence_transformers import SentenceTransformer
+
+def _embedder() -> SentenceTransformer:
+    global _embed_model
+    if _embed_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embed_model = SentenceTransformer(get_settings().embedding_model)
+    return _embed_model
+  
 from sklearn.feature_extraction.text import CountVectorizer
 
 from backend.config import get_settings
