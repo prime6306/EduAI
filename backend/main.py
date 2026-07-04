@@ -76,21 +76,4 @@ async def health():
 
 @app.on_event("startup")
 async def startup_event():
-    """Pre-load heavy models on startup to avoid cold-start latency."""
-    print("[EduAI] Starting up...")
-    try:
-        from backend.modules.attendance.antispoof_engine import load_models
-        load_models()
-    except Exception as e:
-        print(f"[EduAI] AntiSpoof model startup warning: {e}")
-    try:
-        from backend.modules.attendance.face_engine import _load_encodings
-        _load_encodings()
-    except Exception as e:
-        print(f"[EduAI] Face encodings startup warning: {e}")
-    try:
-        from backend.modules.dropout.model import _ensure_models
-        _ensure_models()
-    except Exception as e:
-        print(f"[EduAI] Dropout model startup warning: {e}")
-    print("[EduAI] Startup complete. API ready at http://localhost:8000/docs")
+    print("[EduAI] Starting up (lazy-load mode)...")
