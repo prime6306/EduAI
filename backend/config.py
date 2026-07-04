@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # LLM
     groq_api_key: str
-    groq_model: str = "llama3-70b-8192"
+    groq_model: str = "openai/gpt-oss-120b"
 
     # Embeddings
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
