@@ -47,7 +47,7 @@ EduAI/
 
 | Layer | Technology |
 |-------|-----------|
-| LLM | Groq API — **Llama 3 70B** |
+| LLM | Groq API — **openai/gpt-oss-120b** |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
 | RAG Pipeline | LangChain + **ChromaDB** |
 | Primary DB | **MongoDB Atlas** |
