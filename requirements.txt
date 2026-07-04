@@ -34,7 +34,7 @@ torch==2.3.0
 torchvision==0.18.0
 Pillow==10.3.0
 opencv-python-headless==4.9.0.80
-face-recognition==1.3.0
+
 
 # ─── ML Classic ────────────────────────────────────────────
 scikit-learn==1.5.0
