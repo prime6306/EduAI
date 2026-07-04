@@ -131,7 +131,7 @@ def test_crisis_detection():
 def test_settings_load():
     from backend.config import get_settings
     s = get_settings()
-    assert s.groq_model == "llama3-70b-8192"
+    assert s.groq_model == "openai/gpt-oss-120b"
     assert s.jwt_algorithm == "HS256"
 
 
