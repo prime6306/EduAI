@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ doc.subject }} - {{ q_set.set_label }}</title>
+<style>
+  @page { size: A4; margin: 2.2cm 2cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; color: #111827; font-size: 10.5pt; line-height: 1.5; }
+  .header { text-align: center; margin-bottom: 14px; }
+  .header h1 { font-size: 15pt; margin: 0 0 2px; }
+  .header .meta { font-size: 9.5pt; color: #374151; }
+  .set-label { text-align: right; font-weight: 700; font-size: 10pt; margin-bottom: 10px; }
+  h2.section { font-size: 11pt; border-bottom: 1.5pt solid #111827; padding-bottom: 3px; margin: 16px 0 8px; }
+  .q { margin-bottom: 10px; }
+  .q .qtext { font-weight: 600; }
+  .q .marks { float: right; font-weight: 600; color: #374151; }
+  .opt { margin: 3px 0 3px 16px; }
+  .opt.correct { color: #16A34A; font-weight: 700; }
+  .answer { margin: 4px 0 4px 16px; color: #374151; font-style: italic; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{ doc.subject }}</h1>
+    <div class="meta">Total Marks: {{ doc.total_marks }} &middot; Duration: {{ doc.duration }}</div>
+  </div>
+  <div class="set-label">{{ q_set.set_label }}</div>
+
+  {% set sections = [('mcq', 'Section A - Multiple Choice'), ('short', 'Section B - Short Answer'), ('long', 'Section C - Long Answer')] %}
+  {% for type_key, section_title in sections %}
+    {% set qs = q_set.questions | selectattr('type', 'equalto', type_key) | list %}
+    {% if qs %}
+    <h2 class="section">{{ section_title }}</h2>
+    {% for q in qs %}
+    <div class="q">
+      <span class="marks">[{{ q.marks }}]</span>
+      <div class="qtext">{{ loop.index }}. {{ q.text }}</div>
+      {% if type_key == 'mcq' %}
+        {% for opt in q.options %}
+        <div class="opt {{ 'correct' if show_answers and loop.index0 == q.correct_index }}">({{ 'ABCD'[loop.index0] }}) {{ opt }}</div>
+        {% endfor %}
+      {% elif show_answers and q.answer %}
+        <div class="answer">Answer: {{ q.answer }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+  {% endfor %}
+</body>
+</html>

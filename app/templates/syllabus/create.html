@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Create Syllabus · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/syllabus.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Create Syllabus</h1>
+    <p class="text-sm" style="color:var(--text-muted);">One-time setup per subject per semester.</p>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('syllabus.create') }}" id="syllabusForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>Subject Details</h3></div>
+    <div class="card-body">
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Subject <span class="required">*</span></label>
+          <input class="form-control" type="text" name="subject" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Academic Year</label>
+          <input class="form-control" type="text" name="academic_year" placeholder="e.g. 2026-27">
+        </div>
+      </div>
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Branch</label>
+          <select class="form-control" name="branch">
+            {% for value, label in branches %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year</label>
+          <select class="form-control" name="year">
+            {% for value, label in years %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <input class="form-control" type="text" name="semester" placeholder="e.g. 7">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exam Date <span class="required">*</span></label>
+          <input class="form-control" type="date" name="exam_date" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Total Available Lecture Slots</label>
+        <input class="form-control" type="number" name="total_lectures" min="1" value="40">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Units &amp; Topics</h3>
+      <button type="button" class="btn-secondary btn-sm" id="addUnitBtn">+ Add Unit</button>
+    </div>
+    <div class="card-body">
+      <div id="unitsContainer"></div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn-primary btn-block btn-lg" style="margin-top:20px;">Create Syllabus</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let unitCount = 0;
+  const container = document.getElementById('unitsContainer');
+
+  function addUnit() {
+    unitCount++;
+    const div = document.createElement('div');
+    div.className = 'unit-builder-row';
+    div.innerHTML = `
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Unit ${unitCount} Title</label>
+          <input class="form-control" type="text" name="unit_title[]" placeholder="e.g. Digital Logic Gates">
+          <input type="hidden" name="unit_number[]" value="${unitCount}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Estimated Lectures</label>
+          <input class="form-control" type="number" name="unit_lectures[]" min="1" value="6">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topics (one per line)</label>
+        <textarea class="form-control" name="unit_topics[]" rows="4" placeholder="Boolean Algebra&#10;Karnaugh Maps&#10;Combinational Circuits"></textarea>
+      </div>
+      <button type="button" class="btn-ghost text-sm" style="color:var(--danger);" onclick="this.closest('.unit-builder-row').remove()">Remove Unit</button>
+    `;
+    container.appendChild(div);
+  }
+
+  document.getElementById('addUnitBtn').addEventListener('click', addUnit);
+  addUnit();
+  addUnit();
+</script>
+{% endblock %}

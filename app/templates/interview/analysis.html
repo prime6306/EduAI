@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Interview Analysis · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/interview.css') }}">{% endblock %}
+
+{% block content %}
+{% set jd = session.jd_analysis or {} %}
+{% set resume = session.resume_analysis or {} %}
+{% set fit = session.job_fit or {} %}
+
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ jd.role_title or 'Interview Analysis' }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ jd.seniority or '' }}{{ ' · ' if jd.seniority }}Panel prep from Priya Menon and Arjun Rao, before the interview begins.</p>
+  </div>
+  <a class="btn-ghost text-sm" href="{{ url_for('interview.index') }}">← My Sessions</a>
+</div>
+
+{% if fit %}
+<div class="fit-score-hero">
+  <div>
+    <div class="fit-score-value">{{ fit.job_fit_percent }}%</div>
+    <div class="fit-score-label">Job Fit</div>
+  </div>
+  <div class="fit-score-rationale">{{ fit.rationale }}</div>
+</div>
+{% endif %}
+
+<div class="analysis-grid">
+  <div class="card">
+    <div class="card-header"><h3>Job Requirements</h3></div>
+    <div class="card-body">
+      {% if jd.key_responsibilities %}
+      <div class="section-label">Key Responsibilities</div>
+      <ul class="text-sm" style="margin: 4px 0 16px 18px; color:var(--text-secondary);">
+        {% for item in jd.key_responsibilities %}<li>{{ item }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      <div class="section-label">Required Skills</div>
+      <div class="tag-list" style="margin: 6px 0 16px;">
+        {% for s in jd.required_skills %}<span class="tag-chip">{{ s }}</span>{% endfor %}
+      </div>
+      {% if jd.preferred_skills %}
+      <div class="section-label">Preferred Skills</div>
+      <div class="tag-list" style="margin: 6px 0;">
+        {% for s in jd.preferred_skills %}<span class="tag-chip">{{ s }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Your Resume, Against This Role</h3></div>
+    <div class="card-body">
+      <div class="section-label">Strong Match</div>
+      <div class="tag-list" style="margin: 6px 0 16px;">
+        {% for s in fit.strong_match %}<span class="tag-chip match">{{ s }}</span>{% endfor %}
+        {% for s in resume.strengths_against_jd %}<span class="tag-chip match">{{ s }}</span>{% endfor %}
+      </div>
+      {% if fit.partial_match %}
+      <div class="section-label">Partial Match</div>
+      <div class="tag-list" style="margin: 6px 0 16px;">
+        {% for s in fit.partial_match %}<span class="tag-chip partial">{{ s }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      <div class="section-label">Missing / Weak</div>
+      <div class="tag-list" style="margin: 6px 0;">
+        {% for s in resume.missing_skills %}<span class="tag-chip missing">{{ s }}</span>{% endfor %}
+        {% for s in fit.missing_or_weak %}<span class="tag-chip missing">{{ s }}</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if resume.relevant_projects or resume.relevant_experience %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><h3>What They'll Ask You About</h3></div>
+  <div class="card-body">
+    {% if resume.relevant_projects %}
+    <div class="section-label">Projects Likely to Come Up</div>
+    <ul class="text-sm" style="margin: 4px 0 16px 18px; color:var(--text-secondary);">
+      {% for p in resume.relevant_projects %}<li>{{ p }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if resume.claims_needing_further_questioning %}
+    <div class="section-label">Claims Arjun Will Probe</div>
+    <ul class="text-sm" style="margin: 4px 0 0 18px; color:var(--text-secondary);">
+      {% for c in resume.claims_needing_further_questioning %}<li>{{ c }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if is_owner and session.status == 'interviewing' %}
+<a class="btn-primary btn-block btn-lg" href="{{ url_for('interview.take_view', sid=session._id) }}">Begin Interview →</a>
+{% elif is_owner and session.status == 'completed' %}
+<a class="btn-primary btn-block btn-lg" href="{{ url_for('interview.report_view', sid=session._id) }}">View Your Report →</a>
+{% endif %}
+{% endblock %}

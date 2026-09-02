@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Access Denied · EduAI{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body" style="text-align:center; padding:80px 20px;">
+    <svg class="icon" style="width:40px;height:40px;color:var(--danger);margin:0 auto 16px;" aria-hidden="true">
+      <use href="{{ url_for('static', filename='icons/lucide.svg') }}#x-circle"></use>
+    </svg>
+    <h3 class="text-h3" style="margin-bottom:6px;">Access denied</h3>
+    <p class="text-sm" style="color:var(--text-muted); margin-bottom:20px;">You don't have permission to view this page.</p>
+    <a class="btn-primary" href="{{ url_for('dashboard.home') if current_user.is_authenticated else url_for('auth.login') }}">Go back home</a>
+  </div>
+</div>
+{% endblock %}

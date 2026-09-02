@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ doc.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.title }} — Results</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.subject }}</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    {% if stats.total_submissions > stats.graded_count %}
+    <a class="btn-primary" href="{{ url_for('tests.review', test_id=doc._id) }}">
+      Review Queue ({{ stats.total_submissions - stats.graded_count }})
+    </a>
+    {% endif %}
+    <a class="btn-secondary" href="{{ url_for('tests.export_results', test_id=doc._id) }}">Export CSV</a>
+  </div>
+</div>
+
+<div class="results-stats-row">
+  <div class="stat"><div class="val">{{ stats.total_submissions }}</div><div class="lbl">Submissions</div></div>
+  <div class="stat"><div class="val">{{ stats.average }}</div><div class="lbl">Average Score</div></div>
+  <div class="stat"><div class="val">{{ stats.highest }}</div><div class="lbl">Highest</div></div>
+  <div class="stat"><div class="val">{{ stats.lowest }}</div><div class="lbl">Lowest</div></div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Student</th><th>Score</th><th>Status</th><th>Time Taken</th><th>Submitted</th></tr></thead>
+      <tbody>
+        {% for a in attempts %}
+        <tr>
+          <td>{{ students.get(a.student_id, a.student_id) }}</td>
+          <td>{{ a.score }} / {{ a.total_marks }}</td>
+          <td>
+            {% if a.grading_status == 'complete' %}<span class="badge badge-success">Graded</span>
+            {% elif a.grading_status == 'partial' %}<span class="badge badge-warning">Partially Graded</span>
+            {% else %}<span class="badge badge-neutral">Pending Review</span>{% endif %}
+          </td>
+          <td>{{ (a.time_taken_sec // 60) }}m {{ (a.time_taken_sec % 60) }}s</td>
+          <td>{{ a.submitted_at.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if a.submitted_at else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="table-empty">No submissions yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

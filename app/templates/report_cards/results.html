@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ batch.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/report-cards.css') }}">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ batch.title }} — Results</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ batch.subject }} · Generated {{ batch.generated_at.strftime('%b %d, %Y').replace(' 0', ' ') if batch.generated_at else '' }}</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <form method="POST" action="{{ url_for('report_cards.generate_pdfs', batch_id=batch._id) }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-secondary">Generate PDFs</button>
+    </form>
+    <a class="btn-primary" href="{{ url_for('report_cards.download_zip', batch_id=batch._id) }}">Download All (ZIP)</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          {% for c in batch.components %}<th>{{ c.name }}</th>{% endfor %}
+          <th>Quiz Avg</th><th>Attendance</th>
+          {% if batch.include_dropout_risk %}<th>Dropout Risk</th>{% endif %}
+          <th>Overall</th><th>Grade</th><th>Remark</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in batch.student_records %}
+        <tr>
+          <td>{{ r.name }} ({{ r.student_id }})</td>
+          {% for c in batch.components %}<td>{{ r.ia_marks.get(c.name, '—') }}</td>{% endfor %}
+          <td>{{ r.quiz_avg if r.quiz_avg is not none else '—' }}</td>
+          <td>{{ r.attendance_pct if r.attendance_pct is not none else '—' }}%</td>
+          {% if batch.include_dropout_risk %}
+          <td>{% if r.dropout_risk %}<span class="badge badge-{{ 'danger' if r.dropout_risk == 'High' else 'warning' if r.dropout_risk == 'Medium' else 'success' }}">{{ r.dropout_risk }}</span>{% else %}—{% endif %}</td>
+          {% endif %}
+          <td>{{ r.overall_score if r.overall_score is not none else '—' }}%</td>
+          <td>{% if r.grade %}<span class="grade-badge {{ 'grade-good' if r.grade in ['A+','A'] else 'grade-mid' if r.grade in ['B+','B'] else 'grade-low' if r.grade in ['C','D'] else 'grade-fail' }}">{{ r.grade }}</span>{% else %}—{% endif %}</td>
+          <td style="max-width:200px;">{{ r.remark or '—' }}</td>
+          <td>{% if r.pdf_generated %}<a class="btn-ghost text-sm" href="{{ url_for('report_cards.download_single', batch_id=batch._id, student_id=r.student_id) }}">PDF</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Add Student · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/attendance.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Add Student</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Register a student and optionally enroll their face for attendance.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('students.add_student') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="student_id">Student ID <span class="required">*</span></label>
+          <input class="form-control" id="student_id" name="student_id" type="text" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="name">Full Name <span class="required">*</span></label>
+          <input class="form-control" id="name" name="name" type="text" required>
+        </div>
+      </div>
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="branch">Branch</label>
+          <select class="form-control" id="branch" name="branch">
+            {% for value, label in branches %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="year">Year</label>
+          <select class="form-control" id="year" name="year">
+            {% for value, label in years %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">Email (optional)</label>
+        <input class="form-control" id="email" name="email" type="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Face Photo (optional — can enroll later)</label>
+        <div class="enroll-drop" id="enrollDrop">
+          <div id="enrollPlaceholder">Click to upload a clear, front-facing photo</div>
+          <img id="enrollPreview" style="display:none;">
+        </div>
+        <input type="file" id="photoInput" name="photo" accept="image/jpeg,image/png" style="display:none;">
+      </div>
+
+      <button type="submit" class="btn-primary btn-block btn-lg">Add Student</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const drop = document.getElementById('enrollDrop');
+  const input = document.getElementById('photoInput');
+  const preview = document.getElementById('enrollPreview');
+  const placeholder = document.getElementById('enrollPlaceholder');
+  drop.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => {
+    if (input.files[0]) {
+      preview.src = URL.createObjectURL(input.files[0]);
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+    }
+  });
+</script>
+{% endblock %}

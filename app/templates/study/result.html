@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ p.topic }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/study.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ p.topic }} — {{ p.subject }}</h1>
+    <p class="text-sm" style="color:var(--text-muted); margin-top:4px;">
+      {{ p.branch }} · Year {{ p.year }} ·
+      Generated {{ p.created_at.strftime('%b') }} {{ p.created_at.day }}, {{ p.created_at.strftime('%Y %H:%M') if p.created_at else '' }}
+    </p>
+  </div>
+  <div style="display:flex; gap:8px; flex-shrink:0;">
+    <a class="btn-secondary" href="{{ url_for('nlp.study_material_pdf', pipeline_id=p._id) }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#download"></use></svg>
+      Download PDF
+    </a>
+    <a class="btn-primary" href="{{ url_for('nlp.quiz', topic=p.topic, subject=p.subject) }}">
+      Generate Quiz
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-right"></use></svg>
+    </a>
+  </div>
+</div>
+
+<div class="summary-card">
+  <h3>Summary</h3>
+  <div id="summaryText"></div>
+</div>
+
+<div class="section-label">Subtopics</div>
+<div id="accordionRoot">
+  {% for st in p.subtopics %}
+  {% set explanation = p.explanations[loop.index0].explanation if p.explanations|length > loop.index0 else '' %}
+  {% set videos = p.youtube[loop.index0].videos if p.youtube|length > loop.index0 else [] %}
+  {% set article = p.articles[loop.index0].article if p.articles|length > loop.index0 else None %}
+  <div class="accordion-item {{ 'open' if loop.first }}">
+    <div class="accordion-header" data-toggle>
+      <span>{{ loop.index }}. {{ st.title }}</span>
+      <svg class="icon icon-18 chevron" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-right"></use></svg>
+    </div>
+    <div class="accordion-body">
+      <div class="text-sm" style="font-weight:600; color:var(--text-primary); margin-top:4px;">Key Points</div>
+      <ul class="key-points-list">
+        {% for kp in st.key_points %}<li>{{ kp }}</li>{% endfor %}
+      </ul>
+
+      <div class="text-sm" style="font-weight:600; color:var(--text-primary);">Explanation</div>
+      <div class="explanation-text markdown-body" data-md>{{ explanation }}</div>
+
+      {% if videos %}
+      <div class="resources-label">Videos</div>
+      <div class="video-row">
+        {% for v in videos %}
+        <a class="video-thumb" href="{{ v.url }}" target="_blank" rel="noopener">
+          <img src="{{ v.thumbnail }}" alt="{{ v.title }}" loading="lazy">
+          <div class="v-title">{{ v.title }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if article %}
+      <div class="resources-label">Article</div>
+      <a class="article-card" href="{{ article.url }}" target="_blank" rel="noopener" style="display:block;">
+        <div class="a-title">{{ article.title }}</div>
+        <div>{{ article.snippet }}</div>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script>
+  document.getElementById('summaryText').innerHTML = marked.parse({{ p.summary|tojson }});
+  document.querySelectorAll('[data-md]').forEach(function (el) {
+    el.innerHTML = marked.parse(el.textContent);
+  });
+  document.querySelectorAll('.accordion-header[data-toggle]').forEach(function (header) {
+    header.addEventListener('click', function () {
+      header.closest('.accordion-item').classList.toggle('open');
+    });
+  });
+</script>
+{% endblock %}

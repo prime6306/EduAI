@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Attendance · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/attendance.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Attendance</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Group-photo and live-webcam face attendance with anti-spoof protection.</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('corrections.queue') }}">Corrections Queue</a>
+    <a class="btn-secondary" href="{{ url_for('students.export_csv') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#download"></use></svg>
+      View Report
+    </a>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="group">Group Photo</button>
+  <button class="tab-btn" data-tab="webcam">Live Webcam</button>
+  <button class="tab-btn" data-tab="report">Report</button>
+</div>
+
+<div class="tab-panel active" id="tab-group">
+  <div class="card">
+    <div class="card-header"><h3>Upload Class Photo</h3></div>
+    <div class="card-body">
+      <div class="dropzone" id="groupDropzone">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#camera"></use></svg>
+        <div class="text-sm" style="color:var(--text-secondary); font-weight:500;">Drag a photo here or click to browse</div>
+        <div class="dz-hint">Accepts JPG, PNG · Max 10MB</div>
+      </div>
+      <input type="file" id="groupFileInput" accept="image/jpeg,image/png" style="display:none;">
+
+      <div id="groupPreviewArea" style="display:none; margin-top:20px;">
+        <div class="photo-preview-row">
+          <img id="groupPreviewImg" alt="Class photo preview">
+          <div class="photo-preview-meta">
+            <div class="text-sm" id="groupFileMeta" style="margin-bottom:14px; color:var(--text-secondary);"></div>
+            <button class="btn-primary" id="processPhotoBtn">
+              Process Attendance
+              <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-right"></use></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="groupResults" style="margin-top:20px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-webcam">
+  <div class="card">
+    <div class="card-header"><h3>Camera Preview</h3></div>
+    <div class="card-body">
+      <div class="webcam-wrap">
+        <video id="webcamVideo" class="webcam-video" autoplay playsinline muted></video>
+        <canvas id="webcamCanvas" class="webcam-canvas" style="display:none;"></canvas>
+        <div class="webcam-controls">
+          <button class="btn-primary" id="captureBtn">Capture Frame</button>
+          <button class="btn-secondary" id="retakeBtn" style="display:none;">Retake</button>
+          <button class="btn-primary" id="verifyBtn" style="display:none;">Verify &amp; Mark Attendance</button>
+        </div>
+        <div class="cooldown-note" id="cooldownNote"></div>
+        <div id="webcamResult" style="width:100%; max-width:480px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-report">
+  <div class="grid-metrics section">
+    <div class="metric-card">
+      <div class="metric-label">Total Sessions</div>
+      <div class="metric-value">{{ report.total_sessions }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Unique Students</div>
+      <div class="metric-value">{{ report.unique_students }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Today's Count</div>
+      <div class="metric-value">{{ report.today_count }}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Class Average</div>
+      <div class="metric-value">{{ report.class_avg }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <div class="card-header"><h3>Attendance per Student</h3></div>
+    <div class="card-body">
+      <div class="chart-container">
+        {% if report.chart_labels %}
+          <canvas id="reportChart"></canvas>
+        {% else %}
+          <div class="chart-empty">No attendance data yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Recent Logs</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Student</th><th>Total Attendance</th></tr></thead>
+        <tbody>
+          {% for l in recent_logs %}
+          <tr>
+            <td>{{ l.timestamp.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if l.timestamp else '—' }}</td>
+            <td>{{ l.name }} ({{ l.student_id }})</td>
+            <td>{{ l.total_attendance }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="table-empty">No attendance logs yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+{% if report.chart_labels %}
+<script>
+  new Chart(document.getElementById('reportChart'), {
+    type: 'bar',
+    data: {
+      labels: [{% for l in report.chart_labels %}"{{ l }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Sessions', data: [{% for v in report.chart_values %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], backgroundColor: EduAIChartColors.accent, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+</script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/attendance-webcam.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Analytics · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/analytics.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Teacher Analytics</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Class-wide visibility across attendance, quizzes, dropout risk, and wellness.</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('analytics.heatmap') }}">Topic Heatmap</a>
+    <a class="btn-secondary" href="{{ url_for('analytics.export_attendance_xlsx') }}">Export Attendance (XLSX)</a>
+    <a class="btn-secondary" href="{{ url_for('analytics.export_quiz_csv') }}">Export Quiz Report (CSV)</a>
+  </div>
+</div>
+
+<!-- ═══ Attendance Analytics ═══ -->
+<div class="section">
+  <div class="section-label">Attendance Analytics</div>
+  <div class="grid-1-1">
+    <div class="card">
+      <div class="card-header"><h3>Attendance per Student</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="attendanceBarChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Attendance Trend</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="attendanceTrendChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header">
+      <h3>Low Attendance Alerts</h3>
+      <span class="badge badge-warning">Below {{ 75 }}%</span>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Total Attendance</th><th>Attendance %</th></tr></thead>
+        <tbody>
+          {% for s in attendance.low_attendance %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{{ s.total_attendance }}</td>
+            <td><span class="badge badge-danger">{{ s.percentage }}%</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="table-empty">No students below the attendance threshold.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Quiz Analytics ═══ -->
+<div class="section">
+  <div class="section-label">Quiz Analytics</div>
+  <div class="grid-1-1">
+    <div class="card">
+      <div class="card-header"><h3>Score Distribution</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="scoreHistogram"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Grade Breakdown</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="gradePieChart"></canvas></div></div>
+    </div>
+  </div>
+  <div class="grid-1-1" style="margin-top:16px;">
+    <div class="card">
+      <div class="card-header"><h3>Topic-wise Average Score</h3></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Topic</th><th>Average</th><th>Attempts</th></tr></thead>
+          <tbody>
+            {% for t in quiz.topic_table %}
+            <tr>
+              <td>{{ t.topic }}</td>
+              <td><span class="badge {{ 'badge-danger' if t.average < 40 else ('badge-warning' if t.average < 65 else 'badge-success') }}">{{ t.average }}%</span></td>
+              <td>{{ t.attempts }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="table-empty">No quiz data yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Student Ranking</h3></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Student</th><th>Average</th><th>Attempts</th></tr></thead>
+          <tbody>
+            {% for r in quiz.ranking %}
+            <tr><td>{{ loop.index }}</td><td>{{ r.name }}</td><td>{{ r.average }}%</td><td>{{ r.attempts }}</td></tr>
+            {% else %}
+            <tr><td colspan="4" class="table-empty">No quiz data yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Dropout Analytics ═══ -->
+<div class="section">
+  <div class="section-label">Dropout Analytics</div>
+  <div class="grid-1-1">
+    <div class="card">
+      <div class="card-header"><h3>Risk Level Distribution</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="riskPieChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h3>High-Risk Students</h3>
+        <a class="btn-ghost text-sm" href="{{ url_for('dropout.index') }}">Run Batch Prediction →</a>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Student</th><th>Probability</th><th>Recommended</th></tr></thead>
+          <tbody>
+            {% for s in dropout.high_risk_list %}
+            <tr>
+              <td>{{ s.name }}</td>
+              <td><span class="badge badge-danger">{{ s.probability }}%</span></td>
+              <td class="text-xs">{{ s.recommendations[0] if s.recommendations else '—' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="table-empty">No high-risk students currently.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Wellness Analytics ═══ -->
+<div class="section">
+  <div class="section-label">Wellness Analytics <span class="text-xs" style="color:var(--text-muted); text-transform:none; letter-spacing:0;">(anonymised — no individual names shown)</span></div>
+  <div class="grid-1-1">
+    <div class="card">
+      <div class="card-header"><h3>Severity Distribution</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="severityPieChart"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Sessions Over Time</h3></div>
+      <div class="card-body"><div class="chart-container"><canvas id="wellnessTrendChart"></canvas></div></div>
+    </div>
+  </div>
+  {% if wellness.crisis_count %}
+  <div class="alert alert-danger" style="margin-top:16px;">
+    <svg class="icon icon-18 alert-icon"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#alert-triangle"></use></svg>
+    <div class="alert-body">
+      <div class="alert-title">{{ wellness.crisis_count }} crisis detection event(s) this period</div>
+      Dates only, anonymised: {{ wellness.crisis_dates | join(', ') }}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+  new Chart(document.getElementById('attendanceBarChart'), {
+    type: 'bar',
+    data: {
+      labels: [{% for l in attendance.bar_chart.labels %}"{{ l }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Sessions', data: [{% for v in attendance.bar_chart.chart_values %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], backgroundColor: EduAIChartColors.accent, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('attendanceTrendChart'), {
+    type: 'line',
+    data: {
+      labels: [{% for l in attendance.trend_chart.labels %}"{{ l }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Marks', data: [{% for v in attendance.trend_chart.chart_values %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], borderColor: EduAIChartColors.accent, backgroundColor: 'rgba(29,78,216,0.08)', fill: true, tension: 0.35, pointRadius: 2 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('scoreHistogram'), {
+    type: 'bar',
+    data: {
+      labels: [{% for k in quiz.score_buckets.keys() %}"{{ k }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Students', data: [{% for v in quiz.score_buckets.values() %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], backgroundColor: EduAIChartColors.accentSoft, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+
+  new Chart(document.getElementById('gradePieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: [{% for k in quiz.grade_counts.keys() %}"{{ k }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ data: [{% for v in quiz.grade_counts.values() %}{{ v }}{{ ',' if not loop.last }}{% endfor %}],
+        backgroundColor: [EduAIChartColors.success, EduAIChartColors.accent, EduAIChartColors.warning, '#9CA3AF', EduAIChartColors.danger] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
+  });
+
+  new Chart(document.getElementById('riskPieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Low', 'Medium', 'High'],
+      datasets: [{ data: [{{ dropout.risk_counts.Low }}, {{ dropout.risk_counts.Medium }}, {{ dropout.risk_counts.High }}],
+        backgroundColor: [EduAIChartColors.success, EduAIChartColors.warning, EduAIChartColors.danger] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
+  });
+
+  new Chart(document.getElementById('severityPieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: [{% for k in wellness.severity_counts.keys() %}"{{ k }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ data: [{% for v in wellness.severity_counts.values() %}{{ v }}{{ ',' if not loop.last }}{% endfor %}],
+        backgroundColor: [EduAIChartColors.success, EduAIChartColors.warning, '#F97316', EduAIChartColors.danger] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
+  });
+
+  new Chart(document.getElementById('wellnessTrendChart'), {
+    type: 'line',
+    data: {
+      labels: [{% for l in wellness.sessions_trend.labels %}"{{ l }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Sessions', data: [{% for v in wellness.sessions_trend.chart_values %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], borderColor: EduAIChartColors.accent, backgroundColor: 'rgba(29,78,216,0.08)', fill: true, tension: 0.35, pointRadius: 2 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+</script>
+{% endblock %}

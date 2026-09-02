@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Your Weekly Plan · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/planner.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Your Weekly Study Plan</h1>
+    <p class="text-sm" style="color:var(--text-muted);">
+      {{ plan.subjects | join(', ') }}
+      {% if plan.exam_date %} &middot; Exam {{ plan.exam_date }}{% if plan.days_until_exam is not none and plan.days_until_exam >= 0 %} ({{ plan.days_until_exam }} day{{ 's' if plan.days_until_exam != 1 else '' }} away){% endif %}{% endif %}
+      &middot; {{ plan.hours_per_day }}h / day
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    {% if saved %}
+      <a class="btn-secondary" href="{{ url_for('nlp.planner_pdf', plan_id=plan_id) }}">Export PDF</a>
+      <button class="btn-danger" id="deletePlanBtn" data-plan-id="{{ plan_id }}">Delete Plan</button>
+    {% else %}
+      <a class="btn-secondary" href="{{ url_for('nlp.planner') }}">New Plan</a>
+      <button class="btn-primary" id="savePlanBtn">Save Plan</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="planner-grid">
+  {% for day in plan.schedule %}
+  <div class="planner-day">
+    <div class="planner-day-header">{{ day.day }}</div>
+    <div class="planner-day-body">
+      {% for s in day.sessions %}
+      <div class="planner-session priority-{{ s.priority }}">
+        <div class="planner-session-subject">{{ s.subject }}</div>
+        {% if s.topic %}<div class="planner-session-topic">{{ s.topic }}</div>{% endif %}
+        <div class="planner-session-meta">
+          <span class="planner-session-duration">{{ s.duration_label }}</span>
+          <span class="badge-dot priority-dot-{{ s.priority }}"></span>
+        </div>
+      </div>
+      {% else %}
+      <div class="planner-day-empty">Rest day</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <div class="card">
+    <div class="card-header"><h3>Study Tips</h3></div>
+    <div class="card-body">
+      <ul class="planner-tips-list">
+        {% for tip in plan.tips %}<li>{{ tip }}</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if not saved %}
+<script id="planData" type="application/json">{{ plan | tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  {% if not saved %}
+  document.getElementById('savePlanBtn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    const plan = JSON.parse(document.getElementById('planData').textContent);
+    try {
+      const resp = await apiFetch('{{ url_for("nlp.planner_save") }}', {
+        method: 'POST',
+        body: JSON.stringify({ plan }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.saved) {
+        window.location.href = data.redirect_url;
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Save Plan';
+        alert(data.error || 'Could not save the plan.');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Save Plan';
+      alert('Could not save the plan — please try again.');
+    }
+  });
+  {% else %}
+  document.getElementById('deletePlanBtn').addEventListener('click', async function () {
+    if (!confirm('Delete this saved plan? This cannot be undone.')) return;
+    const id = this.getAttribute('data-plan-id');
+    const resp = await apiFetch(`/api/planner/${id}`, { method: 'DELETE' });
+    if (resp.ok) {
+      window.location.href = '{{ url_for("nlp.planner_saved") }}';
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

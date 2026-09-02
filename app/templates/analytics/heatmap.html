@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Topic Difficulty Heatmap · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/analytics.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Topic Difficulty Heatmap</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Shows average class performance per topic across all quizzes and tests.</p>
+  </div>
+  <a class="btn-secondary" id="exportPdfBtn" href="{{ url_for('analytics.heatmap_export_pdf') }}">Export PDF</a>
+</div>
+
+<div class="card">
+  <div class="card-body" style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+    <div class="form-group" style="margin:0; min-width:160px;">
+      <label class="form-label">Subject</label>
+      <select class="form-control form-select" id="f_subject">
+        <option value="">All Subjects</option>
+        {% for s in subjects %}<option value="{{ s }}" {{ 'selected' if filters.subject == s }}>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0; min-width:160px;">
+      <label class="form-label">Date Range</label>
+      <select class="form-control form-select" id="f_date_range">
+        <option value="7d" {{ 'selected' if filters.date_range == '7d' }}>Last 7 days</option>
+        <option value="30d" {{ 'selected' if filters.date_range == '30d' }}>Last 30 days</option>
+        <option value="semester" {{ 'selected' if filters.date_range == 'semester' }}>This semester</option>
+        <option value="all" {{ 'selected' if filters.date_range == 'all' or not filters.date_range }}>All time</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin:0; min-width:140px;">
+      <label class="form-label">Branch</label>
+      <select class="form-control form-select" id="f_branch">
+        <option value="">All Branches</option>
+        {% for code, label in [('ECE','ECE'),('CS','CS'),('IT','IT'),('ME','ME'),('CE','CE'),('EE','EE')] %}
+        <option value="{{ code }}" {{ 'selected' if filters.branch == code }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0; min-width:120px;">
+      <label class="form-label">Year</label>
+      <select class="form-control form-select" id="f_year">
+        <option value="">All Years</option>
+        {% for y in ['1','2','3','4'] %}<option value="{{ y }}" {{ 'selected' if filters.year == y }}>{{ y }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <h3>Heatmap</h3>
+    <div class="heatmap-legend">
+      <span><i class="legend-dot bucket-red"></i>&lt;40%</span>
+      <span><i class="legend-dot bucket-amber"></i>40–65%</span>
+      <span><i class="legend-dot bucket-green"></i>65%+</span>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="heatmap-row" id="heatmapRow">
+      {% include "analytics/_heatmap_tiles.html" %}
+    </div>
+    <div id="drilldownPanel" class="drilldown-panel" style="display:none;"></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><h3>Red Flags — Below 50% Class Average</h3></div>
+  <div class="table-wrap" id="redFlagsWrap">
+    {% include "analytics/_heatmap_redflags.html" %}
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><h3>Weekly Trend</h3></div>
+  <div class="card-body"><div class="chart-container"><canvas id="trendChart"></canvas></div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+  let trendChart = null;
+  function renderTrend(trend) {
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: trend.labels,
+        datasets: [{ label: 'Avg score %', data: trend.chart_values, borderColor: EduAIChartColors.accent,
+          backgroundColor: 'rgba(29,78,216,0.08)', fill: true, tension: 0.35, pointRadius: 3 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100, grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+    });
+  }
+  renderTrend({{ heatmap.trend_chart | tojson }});
+
+  function bucketClass(b) { return 'bucket-' + b; }
+
+  function renderTiles(tiles) {
+    const row = document.getElementById('heatmapRow');
+    if (!tiles.length) { row.innerHTML = '<p class="text-sm" style="color:var(--text-muted);">No assessment data matches these filters yet.</p>'; return; }
+    row.innerHTML = tiles.map(t => `
+      <div class="heatmap-tile ${bucketClass(t.bucket)}" data-subject="${t.subject}" data-topic="${t.topic}">
+        <div class="heatmap-tile-subject">${t.subject}</div>
+        <div class="heatmap-tile-topic">${t.topic}</div>
+        <div class="heatmap-tile-score">${t.average}%</div>
+        <div class="heatmap-tile-meta">${t.attempts} attempt${t.attempts === 1 ? '' : 's'}</div>
+      </div>
+    `).join('');
+    row.querySelectorAll('.heatmap-tile').forEach(el => el.addEventListener('click', () => openDrilldown(el.dataset.subject, el.dataset.topic)));
+  }
+
+  function renderRedFlags(flags) {
+    const wrap = document.getElementById('redFlagsWrap');
+    if (!flags.length) { wrap.innerHTML = '<p class="text-sm" style="color:var(--text-muted); padding:16px 20px;">No topics are currently below 50% class average.</p>'; return; }
+    wrap.innerHTML = `<table class="data-table"><thead><tr><th>Subject</th><th>Topic</th><th>Average</th><th>Attempts</th><th></th></tr></thead><tbody>` +
+      flags.map(t => `
+        <tr>
+          <td>${t.subject}</td><td>${t.topic}</td>
+          <td><span class="badge badge-danger">${t.average}%</span></td>
+          <td>${t.attempts}</td>
+          <td><button class="btn-ghost text-sm" data-reteach data-subject="${t.subject}" data-topic="${t.topic}">Generate Re-teach Material</button></td>
+        </tr>`).join('') + `</tbody></table>`;
+    wrap.querySelectorAll('[data-reteach]').forEach(btn => btn.addEventListener('click', () => generateReteach(btn)));
+  }
+
+  async function generateReteach(btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+      const resp = await apiFetch('{{ url_for("analytics.api_heatmap_reteach") }}', {
+        method: 'POST', body: JSON.stringify({ subject: btn.dataset.subject, topic: btn.dataset.topic }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.generated) {
+        window.location.href = data.redirect_url;
+      } else {
+        btn.disabled = false; btn.textContent = 'Generate Re-teach Material';
+        alert(data.error || 'Could not generate material.');
+      }
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Generate Re-teach Material';
+      alert('Could not generate material — please try again.');
+    }
+  }
+
+  async function openDrilldown(subject, topic) {
+    const panel = document.getElementById('drilldownPanel');
+    panel.style.display = 'block';
+    panel.innerHTML = '<p class="text-sm" style="color:var(--text-muted);">Loading…</p>';
+    const params = currentFilterParams();
+    params.set('subject', subject);
+    const resp = await apiFetch(`/analytics/api/heatmap/drilldown/${encodeURIComponent(topic)}?${params.toString()}`);
+    const data = await resp.json();
+    panel.innerHTML = `
+      <div class="drilldown-header">
+        <h4>${data.subject} — ${data.topic}</h4>
+        <button class="btn-ghost text-sm" id="closeDrilldown">Close ✕</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Attempts</th><th>Average</th><th>Best</th><th>Last Attempt</th></tr></thead>
+        <tbody>
+          ${data.rows.map(r => `<tr class="${r.average < 50 ? 'row-amber' : ''}"><td>${r.name}</td><td>${r.attempts}</td><td>${r.average}%</td><td>${r.best}%</td><td>${r.last_attempt}</td></tr>`).join('') || '<tr><td colspan="5" class="table-empty">No attempts yet.</td></tr>'}
+        </tbody>
+      </table>
+      ${data.zero_attempt.length ? `<p class="text-sm" style="margin-top:10px;"><strong>Zero attempts:</strong> ${data.zero_attempt.join(', ')}</p>` : ''}
+    `;
+    document.getElementById('closeDrilldown').addEventListener('click', () => { panel.style.display = 'none'; });
+  }
+
+  function currentFilterParams() {
+    const params = new URLSearchParams();
+    params.set('subject', document.getElementById('f_subject').value);
+    params.set('date_range', document.getElementById('f_date_range').value);
+    params.set('branch', document.getElementById('f_branch').value);
+    params.set('year', document.getElementById('f_year').value);
+    return params;
+  }
+
+  async function applyFilters() {
+    document.getElementById('drilldownPanel').style.display = 'none';
+    const params = currentFilterParams();
+    const resp = await apiFetch(`{{ url_for('analytics.api_heatmap_data') }}?${params.toString()}`);
+    const data = await resp.json();
+    renderTiles(data.tiles);
+    renderRedFlags(data.red_flags);
+    renderTrend(data.trend_chart);
+    document.getElementById('exportPdfBtn').href = `{{ url_for('analytics.heatmap_export_pdf') }}?${params.toString()}`;
+  }
+
+  ['f_subject', 'f_date_range', 'f_branch', 'f_year'].forEach(id => {
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+
+  document.querySelectorAll('.heatmap-tile').forEach(el =>
+    el.addEventListener('click', () => openDrilldown(el.dataset.subject, el.dataset.topic))
+  );
+  document.querySelectorAll('[data-reteach]').forEach(btn => btn.addEventListener('click', () => generateReteach(btn)));
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Department CO-PO Summary · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/co-po.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Department CO-PO Summary</h1>
+    <p class="text-sm" style="color:var(--text-muted);">CO-PO attainment across all subjects, sorted to surface the weakest first.</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('co_po.index') }}">My Subjects</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Teacher</th><th>Semester</th><th>Academic Year</th><th>Status</th><th>Avg PO Attainment</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>
+            {% if r.status == 'Calculated' %}<a href="{{ url_for('co_po.report', subject_id=r.setup_id) }}">{{ r.subject }}</a>{% else %}{{ r.subject }}{% endif %}
+          </td>
+          <td>{{ r.teacher_name }}</td>
+          <td>{{ r.semester or '—' }}</td>
+          <td>{{ r.academic_year or '—' }}</td>
+          <td><span class="badge {{ 'badge-success' if r.status == 'Calculated' else 'badge-neutral' }}">{{ r.status }}</span></td>
+          <td>
+            {% if r.avg_po_attainment is not none %}
+            <span class="badge {{ 'badge-danger' if r.avg_po_attainment < 1.5 else ('badge-warning' if r.avg_po_attainment < 2.0 else 'badge-success') }}">{{ r.avg_po_attainment }}</span>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No CO-PO setups exist across the department yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

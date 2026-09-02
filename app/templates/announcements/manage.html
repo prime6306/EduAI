@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Manage Announcements · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/announcements.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Manage Announcements</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ items|length }} announcement{{ 's' if items|length != 1 }}</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('announcements.create') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+    New Announcement
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Read</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for a in items %}
+        <tr id="ann-row-{{ a._id }}">
+          <td>{{ a.title }}{% if a.edited %}<span class="badge badge-neutral" style="margin-left:6px;">Updated</span>{% endif %}</td>
+          <td><span class="badge cat-{{ a.category }}">{{ a.category }}</span></td>
+          <td>
+            <span class="badge badge-{{ 'success' if a.status == 'Active' else 'warning' if a.status == 'Scheduled' else 'neutral' }}">{{ a.status }}</span>
+          </td>
+          <td>{{ a.read_by|length }}</td>
+          <td>{{ a.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if a.created_at else '—' }}</td>
+          <td>
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-ann="{{ a._id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No announcements yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-delete-ann]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-delete-ann');
+      if (!confirm('Delete this announcement?')) return;
+      const resp = await apiFetch(`/api/announcements/delete/${id}`, { method: 'POST' });
+      const data = await resp.json();
+      if (data.deleted) {
+        const row = document.getElementById(`ann-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+</script>
+{% endblock %}

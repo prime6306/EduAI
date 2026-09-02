@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Review · {{ doc.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.title }} — Grading Review</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.subject }}</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('tests.results', test_id=doc._id) }}">Back to Results</a>
+</div>
+
+<div class="review-progress-banner">{{ graded_count }} of {{ total_submissions }} submissions fully graded</div>
+
+{% if current_attempt %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><h3>Grading: {{ students.get(current_attempt.student_id, current_attempt.student_id) }}</h3></div>
+  <div class="card-body">
+    {% for item in descriptive_answers %}
+    <div class="grading-answer-card" data-question-id="{{ item.question.id }}" data-attempt-id="{{ current_attempt._id }}">
+      <div class="qp-question-text">{{ item.question.text }} <span class="badge badge-accent">{{ item.question.marks }} marks</span></div>
+      {% if item.question.correct_answer %}<div class="model-answer">Model answer: {{ item.question.correct_answer }}</div>{% endif %}
+      <div class="student-answer">{{ item.answer.response or '(no answer given)' }}</div>
+      <div class="grading-marks-row">
+        <div class="form-group">
+          <label class="form-label text-xs">Marks Awarded (max {{ item.question.marks }})</label>
+          <input class="form-control marks-input" type="number" min="0" max="{{ item.question.marks }}" value="{{ item.answer.marks_awarded if item.answer.marks_awarded is not none else '' }}">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label text-xs">Comment (optional)</label>
+          <input class="form-control comment-input" type="text" value="{{ item.answer.comment }}">
+        </div>
+        <button class="btn-primary btn-sm save-grade-btn">Save</button>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm" style="color:var(--text-muted);">No descriptive answers to grade for this submission.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="section-label">Pending Submissions</div>
+<div class="card">
+  {% for a in queue %}
+  <div class="review-queue-row">
+    <div>{{ students.get(a.student_id, a.student_id) }} — <span class="badge badge-{{ 'warning' if a.grading_status == 'partial' else 'neutral' }}">{{ a.grading_status|capitalize }}</span></div>
+    <a class="btn-secondary btn-sm" href="{{ url_for('tests.review', test_id=doc._id, attempt_id=a._id) }}">Grade</a>
+  </div>
+  {% else %}
+  <div class="table-empty">All submissions are fully graded.</div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.save-grade-btn').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const card = btn.closest('.grading-answer-card');
+      const marks = card.querySelector('.marks-input').value;
+      const comment = card.querySelector('.comment-input').value;
+      btn.disabled = true;
+      const resp = await apiFetch('/api/tests/grade', {
+        method: 'POST',
+        body: JSON.stringify({
+          test_id: '{{ doc._id }}', attempt_id: card.getAttribute('data-attempt-id'),
+          question_id: card.getAttribute('data-question-id'), marks_awarded: parseInt(marks) || 0, comment: comment,
+        }),
+      });
+      if (resp.ok) {
+        btn.textContent = 'Saved';
+        setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1200);
+      } else {
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+{% endblock %}

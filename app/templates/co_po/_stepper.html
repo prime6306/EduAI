@@ -1,0 +1,17 @@
+<div class="co-po-stepper">
+  <a href="{{ url_for('co_po.setup', subject_id=subject_id) }}" class="co-po-step {{ 'active' if current_step == 1 else ('done' if current_step > 1 else '') }}">
+    <span class="co-po-step-num">1</span> Define COs
+  </a>
+  <span class="co-po-step-arrow">→</span>
+  <a href="{{ url_for('co_po.mapping', subject_id=subject_id) }}" class="co-po-step {{ 'active' if current_step == 2 else ('done' if current_step > 2 else '') }}">
+    <span class="co-po-step-num">2</span> Map to POs
+  </a>
+  <span class="co-po-step-arrow">→</span>
+  <a href="{{ url_for('co_po.assessment_map', subject_id=subject_id) }}" class="co-po-step {{ 'active' if current_step == 3 else ('done' if current_step > 3 else '') }}">
+    <span class="co-po-step-num">3</span> Map Assessments
+  </a>
+  <span class="co-po-step-arrow">→</span>
+  <span class="co-po-step {{ 'active' if current_step == 4 else '' }}">
+    <span class="co-po-step-num">4</span> Report
+  </span>
+</div>

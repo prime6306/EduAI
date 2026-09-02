@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Doubt Solver · EduAI{% endblock %}
+{% block content_area_class %}chat-area{% endblock %}
+{% block content_inner_class %}chat-inner{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/doubt.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="chat-shell">
+  <aside class="chat-config">
+    <div>
+      <h4>Doubt Solver</h4>
+      <p class="text-xs" style="color:var(--text-muted);">Ask anything about your coursework.</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="subjectInput">Subject</label>
+      <input id="subjectInput" class="form-control" type="text" placeholder="e.g. Digital Electronics">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="levelSelect">Explanation Level</label>
+      <select id="levelSelect" class="form-control">
+        {% for lvl in levels %}
+        <option value="{{ lvl }}" {{ 'selected' if lvl == 'Intermediate' }}>{{ lvl }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button id="newConversationBtn" class="btn-secondary btn-block btn-sm">
+      <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+      New Conversation
+    </button>
+
+    <div class="sidebar-divider" style="margin: 0; background: var(--border);"></div>
+
+    <div>
+      <div class="text-2xs" style="color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">Recent</div>
+      <div class="chat-recent-list" id="recentList">
+        {% for c in recent_conversations %}
+        <div class="chat-recent-item" data-id="{{ c.id }}">{{ c.title }}</div>
+        {% else %}
+        <div class="chat-recent-empty">No conversations yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+  <div class="chat-main">
+    <div class="chat-header">
+      <h3 class="text-h3">Chat</h3>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-empty-state" id="emptyState">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#message-circle"></use></svg>
+        <div>
+          <div class="text-h3" style="margin-bottom:4px;">What do you want to learn?</div>
+          <p class="text-sm">Ask a question below, or try one of these:</p>
+        </div>
+        <div class="starter-pills">
+          <div class="starter-pill" data-q="Explain how a MOSFET works">Explain how a MOSFET works</div>
+          <div class="starter-pill" data-q="What is the Z-Transform used for?">What is the Z-Transform used for?</div>
+          <div class="starter-pill" data-q="Walk me through Big-O notation">Walk me through Big-O notation</div>
+          <div class="starter-pill" data-q="Explain Bayes' Theorem with an example">Explain Bayes' Theorem</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-bar">
+      <div class="chat-input-row">
+        <textarea id="chatInput" class="form-control" rows="1" placeholder="Ask a question..."></textarea>
+        <button id="sendBtn" class="btn-primary">
+          Send
+          <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-right"></use></svg>
+        </button>
+      </div>
+      <div class="chat-input-hint">Shift+Enter for a new line</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script src="{{ url_for('static', filename='js/doubt-chat.js') }}"></script>
+{% endblock %}

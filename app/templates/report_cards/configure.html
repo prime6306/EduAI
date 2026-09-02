@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Configure · {{ batch.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/report-cards.css') }}">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Configure &amp; Generate</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ batch.title }} · {{ batch.subject }}</p>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('report_cards.configure', batch_id=batch._id) }}" id="configForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>Score Weightages</h3></div>
+    <div class="card-body">
+      <div class="weightage-row">
+        <label>Internal Assessment</label>
+        <input type="range" name="weight_ia" min="0" max="100" value="{{ batch.weightages.ia }}" oninput="updateWeight(this)">
+        <span class="w-val">{{ batch.weightages.ia }}%</span>
+      </div>
+      <div class="weightage-row">
+        <label>Quiz Average</label>
+        <input type="range" name="weight_quiz" min="0" max="100" value="{{ batch.weightages.quiz }}" oninput="updateWeight(this)">
+        <span class="w-val">{{ batch.weightages.quiz }}%</span>
+      </div>
+      <div class="weightage-row">
+        <label>Attendance</label>
+        <input type="range" name="weight_attendance" min="0" max="100" value="{{ batch.weightages.attendance }}" oninput="updateWeight(this)">
+        <span class="w-val">{{ batch.weightages.attendance }}%</span>
+      </div>
+      <div class="weightage-total" id="weightTotal"></div>
+      <div class="checkbox-row" style="margin-top:10px;">
+        <input type="checkbox" id="include_dropout_risk" name="include_dropout_risk" {{ 'checked' if batch.include_dropout_risk }}>
+        <label for="include_dropout_risk">Include dropout risk indicator on report card</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>Grading Scheme</h3></div>
+    <div class="card-body">
+      <div id="gradeSchemeContainer"></div>
+      <button type="button" class="btn-secondary btn-sm" id="addGradeBtn">+ Add Tier</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>Remarks</h3></div>
+    <div class="card-body">
+      <input type="hidden" name="remark_mode" id="remarkModeField" value="{{ batch.remark_mode }}">
+      <div class="remark-mode-tabs">
+        <button type="button" data-mode="template" class="{{ 'active' if batch.remark_mode == 'template' }}">Template</button>
+        <button type="button" data-mode="ai" class="{{ 'active' if batch.remark_mode == 'ai' }}">AI-Generated</button>
+        <button type="button" data-mode="none" class="{{ 'active' if batch.remark_mode == 'none' }}">None</button>
+      </div>
+      <div class="form-group" id="templateWrap" style="{{ 'display:none;' if batch.remark_mode != 'template' }}">
+        <label class="form-label">Remark Template</label>
+        <input class="form-control" name="remark_template" value="{{ batch.remark_template }}">
+        <span class="form-hint">Placeholders: {name}, {grade}, {grade_word}</span>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn-primary btn-block btn-lg" id="generateBtn">Generate Report Cards</button>
+</form>
+
+<div class="modal-overlay" id="loadingOverlay">
+  <div class="modal" style="width:340px;">
+    <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+      <div class="spinner" style="width:32px;height:32px;border-color:var(--border-strong);border-top-color:var(--accent);margin:0 auto 16px;"></div>
+      <h3 class="text-h3" style="margin-bottom:6px;">Computing scores…</h3>
+      <p class="text-sm" style="color:var(--text-muted);">Pulling quiz averages, attendance, and grading each student.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function updateWeight(input) {
+    input.nextElementSibling.textContent = input.value + '%';
+    const total = ['weight_ia', 'weight_quiz', 'weight_attendance']
+      .reduce((sum, name) => sum + parseInt(document.querySelector(`[name="${name}"]`).value), 0);
+    const totalEl = document.getElementById('weightTotal');
+    totalEl.textContent = `Total: ${total}%` + (total !== 100 ? ' (should be 100%)' : '');
+    totalEl.classList.toggle('error', total !== 100);
+  }
+  updateWeight(document.querySelector('[name="weight_ia"]'));
+
+  const gradeContainer = document.getElementById('gradeSchemeContainer');
+  const defaultScheme = {{ default_scheme | tojson }};
+  const currentScheme = {{ batch.grading_scheme | tojson }};
+  function addGradeRow(grade, min, max) {
+    const row = document.createElement('div');
+    row.className = 'grade-scheme-row';
+    row.innerHTML = `
+      <input class="form-control" name="grade_name[]" value="${grade}" placeholder="A+">
+      <input class="form-control" name="grade_min[]" type="number" value="${min}" placeholder="Min %">
+      <input class="form-control" name="grade_max[]" type="number" value="${max}" placeholder="Max %">
+      <button type="button" class="btn-icon" onclick="this.closest('.grade-scheme-row').remove()">
+        <svg class="icon icon-14" aria-hidden="true"><use href="/static/icons/lucide.svg#trash-2"></use></svg>
+      </button>
+    `;
+    gradeContainer.appendChild(row);
+  }
+  (currentScheme.length ? currentScheme : defaultScheme).forEach(t => addGradeRow(t.grade, t.min, t.max));
+  document.getElementById('addGradeBtn').addEventListener('click', () => addGradeRow('', 0, 0));
+
+  document.querySelectorAll('.remark-mode-tabs button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.remark-mode-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('remarkModeField').value = btn.getAttribute('data-mode');
+      document.getElementById('templateWrap').style.display = btn.getAttribute('data-mode') === 'template' ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('configForm').addEventListener('submit', function () {
+    document.getElementById('generateBtn').classList.add('loading');
+    document.getElementById('loadingOverlay').classList.add('open');
+  });
+</script>
+{% endblock %}

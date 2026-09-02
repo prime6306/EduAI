@@ -1,0 +1,73 @@
+/* ==========================================================================
+   rag.css — document sidebar, grounded answer cards
+   ========================================================================== */
+
+.content-area.rag-area { overflow: hidden; }
+.content-inner.rag-inner { padding: 0; max-width: none; height: 100%; display: flex; }
+
+.rag-shell { display: flex; width: 100%; height: 100%; }
+
+.rag-docs-panel {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rag-doc-item {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+.rag-doc-item:hover { background: var(--bg-surface-2); }
+.rag-doc-item.selected { background: var(--accent-light); border-left-color: var(--accent); }
+.rag-doc-item .doc-name {
+  font-size: 0.8125rem; font-weight: 500; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rag-doc-item .doc-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.rag-doc-empty { font-size: 0.8125rem; color: var(--text-disabled); }
+
+.rag-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.rag-main-header { padding: 14px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.rag-qa-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+.rag-empty-state {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 10px; color: var(--text-muted);
+}
+.rag-empty-state .icon { width: 40px; height: 40px; color: var(--text-disabled); }
+
+.rag-qa-pair { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+.rag-question { align-self: flex-end; background: var(--accent-light); border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg); padding: 10px 14px; font-size: 0.9375rem; color: var(--text-primary); }
+.rag-answer { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px 16px; color: var(--text-secondary); line-height: 1.65; }
+.rag-answer p { margin: 0 0 10px; }
+.rag-answer p:last-child { margin-bottom: 0; }
+
+.grounding-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.grounding-badge { font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: var(--radius-pill); }
+.grounding-badge.grounded { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.grounding-badge.partial { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+.grounding-badge.hallucinated, .grounding-badge.off_topic { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+
+.related-questions { font-size: 0.8125rem; color: var(--text-muted); }
+.related-questions .rq-item {
+  display: inline-block; margin-right: 6px; margin-top: 4px;
+  padding: 3px 10px; border: 1px solid var(--border); border-radius: var(--radius-pill);
+  cursor: pointer; color: var(--text-secondary);
+}
+.related-questions .rq-item:hover { background: var(--bg-surface-2); }
+
+.rag-input-bar { border-top: 1px solid var(--border); padding: 14px 24px; flex-shrink: 0; background: var(--bg-surface); }
+.rag-input-row { display: flex; gap: 10px; }
+
+.storage-indicator { font-size: 0.8125rem; color: var(--text-muted); }

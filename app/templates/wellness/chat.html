@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Wellness Chat · EduAI{% endblock %}
+{% block content_area_class %}chat-area{% endblock %}
+{% block content_inner_class %}chat-inner{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/doubt.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/wellness.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-shell">
+  <aside class="chat-config">
+    <div>
+      <h4>Wellness Companion</h4>
+      <p class="text-xs" style="color:var(--text-muted);">A private, judgment-free space to talk.</p>
+    </div>
+    {% if severity %}
+    <div class="badge badge-{{ 'success' if severity == 'Minimal' else ('warning' if severity in ['Mild','Moderate'] else 'danger') }}" style="align-self:flex-start;">
+      Last check-in: {{ severity }}
+    </div>
+    {% endif %}
+    {% include "partials/helplines.html" %}
+  </aside>
+
+  <div class="chat-main">
+    <div class="chat-header"><h3 class="text-h3">Chat</h3></div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-empty-state" id="emptyState">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#heart"></use></svg>
+        <div>
+          <div class="text-h3" style="margin-bottom:4px;">How are you doing?</div>
+          <p class="text-sm">Whatever's on your mind, I'm here to listen.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-bar">
+      <div class="chat-input-row">
+        <textarea id="chatInput" class="form-control" rows="1" placeholder="Share what's on your mind..."></textarea>
+        <button id="sendBtn" class="btn-primary">Send</button>
+      </div>
+      <div class="chat-input-hint">Shift+Enter for a new line · This isn't a substitute for professional care.</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="{{ url_for('static', filename='js/wellness-chat.js') }}"></script>
+{% endblock %}

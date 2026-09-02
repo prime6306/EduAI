@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}CO-PO Report — {{ setup.subject }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/co-po.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ setup.subject }} — Attainment Report</h1>
+    <p class="text-sm" style="color:var(--text-muted);">
+      {{ setup.semester }}{% if setup.semester and setup.academic_year %} &middot; {% endif %}{{ setup.academic_year }}
+      &middot; Calculated {{ result.calculated_at.strftime('%b %d, %Y at %H:%M UTC').replace(' 0', ' ') }}
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('co_po.calculate', subject_id=setup._id) }}">Recalculate</a>
+    <a class="btn-secondary" href="{{ url_for('co_po.export_xlsx', subject_id=setup._id) }}">Export XLSX</a>
+    <a class="btn-primary" href="{{ url_for('co_po.export_pdf', subject_id=setup._id) }}">Export PDF</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Table 1 — CO Attainment</h3></div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>CO</th><th>Description</th><th>Target</th><th>Attained</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for co in result.co_attainment %}
+        <tr>
+          <td>{{ co.co_id }}</td>
+          <td class="text-sm">{{ co.description }}</td>
+          <td>{{ co.target }}</td>
+          <td>{{ co.attainment if co.attainment is not none else '—' }}</td>
+          <td>
+            {% if co.attainment is none %}<span class="badge badge-neutral">No Data</span>
+            {% elif co.met %}<span class="badge badge-success">Met</span>
+            {% else %}<span class="badge badge-warning">Below Target</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><h3>Table 2 — CO-PO Mapping Matrix</h3></div>
+  <div class="table-wrap">
+    <table class="data-table co-po-grid-table">
+      <thead><tr><th>CO</th>{% for po in result.po_attainment %}<th>{{ po.po_id }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for co in setup.course_outcomes %}
+        <tr>
+          <td>{{ co.id }}</td>
+          {% for po in result.po_attainment %}
+          <td style="text-align:center;">{{ setup.po_mapping.get(co.id, {}).get(po.po_id, '–') }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid-1-1" style="margin-top:16px;">
+  <div class="card">
+    <div class="card-header"><h3>Table 3 — PO Attainment</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>PO</th><th>Name</th><th>Attainment</th><th>Visual</th></tr></thead>
+        <tbody>
+          {% for po in result.po_attainment %}
+          <tr>
+            <td>{{ po.po_id }}</td>
+            <td class="text-sm">{{ po.po_name }}</td>
+            <td>{{ po.attainment if po.attainment is not none else '—' }}</td>
+            <td>
+              {% if po.attainment is not none %}
+              <div class="progress-track" style="width:80px; display:inline-block;">
+                <div class="progress-fill {{ 'danger' if po.level == 'red' else 'success' }}" style="width:{{ (po.attainment / 3 * 100) | round(0) }}%;"></div>
+              </div>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>PO Radar</h3></div>
+    <div class="card-body"><div class="chart-container"><canvas id="radarChart"></canvas></div></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><h3>Gap Analysis</h3></div>
+  <div class="card-body">
+    {% if result.gap_analysis %}
+    {% for g in result.gap_analysis %}
+    <div class="alert {{ 'alert-danger' if g.type == 'PO' else 'alert-warning' }}" style="margin-bottom:10px;">
+      <svg class="icon icon-18 alert-icon"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#alert-triangle"></use></svg>
+      <div class="alert-body">
+        <div class="alert-title">{{ g.type }} {{ g.id }} — {{ g.gap }} below {{ 'threshold' if g.type == 'PO' else 'target' }}</div>
+        {{ g.recommendation }}
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="text-sm" style="color:var(--text-muted);">No gaps — every CO and PO with data is meeting its target.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: [{% for po in result.po_attainment %}"{{ po.po_id }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [
+        {
+          label: 'Attained',
+          data: [{% for po in result.po_attainment %}{{ po.attainment if po.attainment is not none else 0 }}{{ ',' if not loop.last }}{% endfor %}],
+          borderColor: EduAIChartColors.accent, backgroundColor: 'rgba(29,78,216,0.15)', pointBackgroundColor: EduAIChartColors.accent,
+        },
+        {
+          label: 'Target',
+          data: [{% for po in result.po_attainment %}{{ po.target if po.target is not none else 0 }}{{ ',' if not loop.last }}{% endfor %}],
+          borderColor: '#9CA3AF', backgroundColor: 'rgba(156,163,175,0.08)', pointBackgroundColor: '#9CA3AF', borderDash: [4, 4],
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom' } },
+      scales: { r: { min: 0, max: 3, grid: { color: EduAIChartColors.border }, ticks: { stepSize: 1 } } },
+    },
+  });
+</script>
+{% endblock %}

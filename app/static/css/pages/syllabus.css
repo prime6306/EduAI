@@ -1,0 +1,51 @@
+/* ==========================================================================
+   syllabus.css — unit cards, topic checklist, pace banner, heatmap
+   ========================================================================== */
+
+.pace-banner {
+  padding: 14px 18px; border-radius: var(--radius-lg); margin-bottom: 20px;
+  font-size: 0.875rem; font-weight: 500; display: flex; align-items: center; gap: 10px;
+}
+.pace-banner.ok { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.pace-banner.behind { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+
+.unit-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 14px;
+  background: var(--bg-surface);
+}
+.unit-card.zero-coverage-alert { border-color: var(--danger-border); box-shadow: 0 0 0 1px var(--danger-border); }
+.unit-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.unit-card-header h4 { font-size: 0.9375rem; }
+.unit-progress-label { font-size: 0.8125rem; color: var(--text-muted); }
+
+.topic-checklist { display: flex; flex-direction: column; gap: 4px; }
+.topic-check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius-sm);
+  font-size: 0.875rem; color: var(--text-secondary);
+  cursor: pointer;
+}
+.topic-check-row:hover { background: var(--bg-surface-2); }
+.topic-check-row input { accent-color: var(--accent); width: 16px; height: 16px; }
+.topic-check-row.covered .t-text { text-decoration: line-through; color: var(--text-disabled); }
+.topic-check-row .t-date { margin-left: auto; font-size: 0.75rem; color: var(--text-disabled); }
+
+.unit-builder-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.heatmap-grid { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.heatmap-cell { aspect-ratio: 1; border-radius: 2px; background: var(--bg-surface-3); }
+.heatmap-cell.level-1 { background: #BBF7D0; }
+.heatmap-cell.level-2 { background: #4ADE80; }
+.heatmap-cell.level-3 { background: #16A34A; }
+
+.uncovered-list-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text-secondary); }
+.uncovered-list-item:last-child { border-bottom: none; }
+.uncovered-list-item .unit-tag { font-size: 0.75rem; color: var(--text-muted); }

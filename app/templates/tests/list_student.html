@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Tests · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Tests</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Assigned to you by your teachers.</p>
+  </div>
+</div>
+
+{% for t in tests %}
+{% set attempt = attempts.get(t._id|string) %}
+<div class="assigned-test-card">
+  <div class="t-title">{{ t.title }}</div>
+  <div class="t-meta">
+    {{ t.subject }} · {{ t.questions|length }} questions ·
+    {{ t.time_limit_minutes and (t.time_limit_minutes ~ ' min') or 'No time limit' }}
+    {% if t.is_upcoming %} · Opens {{ t.available_from.strftime('%b %d, %H:%M').replace(' 0', ' ') }}{% endif %}
+    {% if t.available_until %} · Closes {{ t.available_until.strftime('%b %d, %H:%M').replace(' 0', ' ') }}{% endif %}
+  </div>
+  {% if attempt and attempt.submitted_at %}
+    <a class="btn-secondary" href="{{ url_for('tests.student_result', attempt_id=attempt._id) }}">View Result</a>
+  {% elif t.is_upcoming %}
+    <button class="btn-secondary" disabled>Not Yet Open</button>
+  {% elif t.is_expired %}
+    <button class="btn-secondary" disabled>Closed</button>
+  {% else %}
+    <a class="btn-primary" href="{{ url_for('tests.take', test_id=t._id) }}">Start Test</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center; padding:48px; color:var(--text-muted);">No tests assigned yet.</div></div>
+{% endfor %}
+{% endblock %}

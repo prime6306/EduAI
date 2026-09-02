@@ -1,0 +1,73 @@
+/* ==========================================================================
+   study.css — summary card, accordion, resource thumbnails
+   ========================================================================== */
+
+.summary-card {
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.summary-card h3 { color: var(--info); margin-bottom: 8px; font-size: 0.9375rem; }
+
+.accordion-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+.accordion-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+}
+.accordion-header:hover { background: var(--bg-surface-2); }
+.accordion-header .chevron { transition: transform 200ms ease; color: var(--text-muted); }
+.accordion-item.open .accordion-header .chevron { transform: rotate(90deg); }
+
+.accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 250ms ease;
+  padding: 0 18px;
+}
+.accordion-item.open .accordion-body {
+  max-height: 4000px;
+  padding: 0 18px 18px;
+}
+
+.key-points-list { margin: 8px 0 16px 20px; }
+.key-points-list li { margin-bottom: 6px; color: var(--text-secondary); font-size: 0.875rem; }
+
+.explanation-text { color: var(--text-secondary); line-height: 1.7; margin-bottom: 16px; white-space: pre-wrap; }
+
+.resources-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+.video-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.video-thumb {
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+}
+.video-thumb img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.video-thumb .v-title { padding: 8px 10px; font-size: 0.75rem; color: var(--text-secondary); }
+
+.article-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.article-card .a-title { font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+
+.notes-search { max-width: 280px; margin-bottom: 16px; }

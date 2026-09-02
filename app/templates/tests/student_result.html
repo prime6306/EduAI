@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Result · {{ test.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ test.title }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ test.subject }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body" style="text-align:center; padding:32px 20px;">
+    {% if attempt.grading_status == 'complete' %}
+      <div class="text-display">{{ attempt.score }} / {{ attempt.total_marks }}</div>
+      <p class="text-sm" style="color:var(--text-muted); margin-top:8px;">Final score</p>
+    {% else %}
+      <svg class="icon" style="width:36px;height:36px;color:var(--warning); margin:0 auto 12px;" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clock"></use></svg>
+      <h3 class="text-h3">Submitted — awaiting grading</h3>
+      <p class="text-sm" style="color:var(--text-muted); margin-top:6px;">
+        {{ attempt.score }} / {{ attempt.total_marks }} auto-graded so far. Descriptive questions are still being reviewed by your teacher.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<p class="text-xs" style="color:var(--text-muted); margin-top:16px; text-align:center;">
+  Submitted {{ attempt.submitted_at.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if attempt.submitted_at else '' }} ·
+  Time taken: {{ (attempt.time_taken_sec // 60) }}m {{ (attempt.time_taken_sec % 60) }}s
+</p>
+{% endblock %}

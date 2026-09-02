@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Quiz History · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Quiz History</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Average score: {{ avg_score }}%</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('nlp.quiz') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+    New Quiz
+  </a>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header"><h3>Score Trend</h3></div>
+  <div class="card-body">
+    <div class="chart-container">
+      {% if history %}
+        <canvas id="historyChart"></canvas>
+      {% else %}
+        <div class="chart-empty">No quiz attempts yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Topic</th><th>Subject</th><th>Score</th><th>Grade</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td>{{ h.topic }}</td>
+          <td>{{ h.subject }}</td>
+          <td>{{ h.score_percent }}% ({{ h.correct_count }}/{{ h.total }})</td>
+          <td>
+            {% set gc = 'success' if h.grade in ['A+','A'] else 'warning' if h.grade in ['B','C'] else 'danger' %}
+            <span class="badge badge-{{ gc }}">{{ h.grade }}</span>
+          </td>
+          <td>{{ h.timestamp.strftime('%b %d, %Y').replace(' 0', ' ') if h.timestamp else '—' }}</td>
+          <td><a class="btn-ghost text-sm" href="{{ url_for('nlp.quiz_results', result_id=h._id) }}">Review</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No quizzes taken yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if history %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+  {% set chrono = history[::-1] %}
+  new Chart(document.getElementById('historyChart'), {
+    type: 'line',
+    data: {
+      labels: [{% for h in chrono %}"{{ h.timestamp.strftime('%b %d').replace(' 0', ' ') if h.timestamp else loop.index }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{
+        label: 'Score %',
+        data: [{% for h in chrono %}{{ h.score_percent }}{{ ',' if not loop.last }}{% endfor %}],
+        borderColor: EduAIChartColors.accent,
+        backgroundColor: 'rgba(29, 78, 216, 0.08)',
+        fill: true, tension: 0.35, pointRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { y: { min: 0, max: 100, grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

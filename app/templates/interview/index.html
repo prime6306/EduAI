@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Interview Prep · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/interview.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Interview Prep</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Practice with two AI recruiters — a warm Talent Partner and a demanding Technical Lead — built from your actual resume and target job description.</p>
+  </div>
+</div>
+
+<div class="recruiter-row">
+  {% for r in recruiters %}
+  <div class="recruiter-card">
+    <div class="recruiter-avatar{{ ' arjun' if r.key == 'recruiter_b' }}">{{ r.avatar_initials }}</div>
+    <div class="recruiter-meta">
+      <div class="r-name">{{ r.name }}</div>
+      <div class="r-title">{{ r.title }}</div>
+      <div class="r-desc">{{ 'Runs your screening round and the closing question — warm, conversational.' if r.key == 'recruiter_a' else 'Runs your technical and deep-dive rounds — precise, probing.' }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Start a Mock Interview</h3></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('interview.start_session') }}" enctype="multipart/form-data" id="startInterviewForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="interview-input-grid">
+        <div class="form-group">
+          <label class="form-label" for="jd_text">Job Description</label>
+          <textarea class="form-control" id="jd_text" name="jd_text" placeholder="Paste the job description here..."></textarea>
+          <div class="file-input-row">
+            <span class="text-xs" style="color:var(--text-muted);">or upload:</span>
+            <input type="file" name="jd_file" accept=".pdf,.docx,.txt,.md">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="resume_text">Your Resume</label>
+          <textarea class="form-control" id="resume_text" name="resume_text" placeholder="Paste your resume text here..."></textarea>
+          <div class="file-input-row">
+            <span class="text-xs" style="color:var(--text-muted);">or upload:</span>
+            <input type="file" name="resume_file" accept=".pdf,.docx,.txt,.md">
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary btn-block btn-lg" id="startInterviewBtn" {{ 'disabled' if status and not status.unlimited and status.remaining <= 0 }}>Start Mock Interview</button>
+      {% include "partials/_usage_meter.html" %}
+      <p class="text-xs" style="color:var(--text-muted); text-align:center; margin-top:8px;">Takes ~20-30 seconds to analyse, then a ~11-question adaptive interview with both recruiters.</p>
+    </form>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <div class="card">
+    <div class="card-header"><h3>My Sessions</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Target Role</th><th>Status</th><th>Score</th><th>Readiness</th><th>Started</th><th></th></tr></thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td>{{ s.jd_analysis.role_title if s.jd_analysis and s.jd_analysis.role_title else 'Untitled role' }}</td>
+            <td>
+              {% if s.status == 'completed' %}<span class="badge badge-success">Completed</span>
+              {% elif s.status == 'interviewing' %}<span class="badge badge-info">In Progress</span>
+              {% else %}<span class="badge badge-neutral">Setting Up</span>{% endif %}
+            </td>
+            <td>{{ s.report.overall_score if s.report else '—' }}{{ '/100' if s.report }}</td>
+            <td>
+              {% if s.report %}<span class="readiness-chip {{ s.report.readiness.tone }}">{{ s.report.readiness.label }}</span>{% else %}—{% endif %}
+            </td>
+            <td>{{ s.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if s.created_at else '—' }}</td>
+            <td>
+              {% if s.status == 'completed' %}
+              <a class="btn-ghost text-sm" href="{{ url_for('interview.report_view', sid=s._id) }}">View Report</a>
+              {% elif s.status == 'interviewing' %}
+              <a class="btn-ghost text-sm" href="{{ url_for('interview.take_view', sid=s._id) }}">Continue →</a>
+              {% else %}
+              <a class="btn-ghost text-sm" href="{{ url_for('interview.analysis_view', sid=s._id) }}">View</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="text-sm" style="color:var(--text-disabled); text-align:center; padding:24px;">No mock interviews yet — start one above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if teacher_sessions is not none %}
+<div class="section" style="margin-top:24px;">
+  <div class="card">
+    <div class="card-header"><h3>Class Interview Reports</h3></div>
+    <p class="text-xs" style="color:var(--text-muted); padding: 0 20px 12px;">Every student's mock interview sessions — open any completed report to leave personalised feedback.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Target Role</th><th>Status</th><th>Score</th><th>Readiness</th><th>Started</th><th></th></tr></thead>
+        <tbody>
+          {% for s in teacher_sessions %}
+          <tr>
+            <td>{{ s.student_name }}</td>
+            <td>{{ s.jd_analysis.role_title if s.jd_analysis and s.jd_analysis.role_title else 'Untitled role' }}</td>
+            <td>
+              {% if s.status == 'completed' %}<span class="badge badge-success">Completed</span>
+              {% elif s.status == 'interviewing' %}<span class="badge badge-info">In Progress</span>
+              {% else %}<span class="badge badge-neutral">Setting Up</span>{% endif %}
+            </td>
+            <td>{{ s.report.overall_score if s.report else '—' }}{{ '/100' if s.report }}</td>
+            <td>
+              {% if s.report %}<span class="readiness-chip {{ s.report.readiness.tone }}">{{ s.report.readiness.label }}</span>{% else %}—{% endif %}
+            </td>
+            <td>{{ s.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if s.created_at else '—' }}</td>
+            <td>
+              {% if s.status == 'completed' %}
+              <a class="btn-ghost text-sm" href="{{ url_for('interview.report_view', sid=s._id) }}">View Report</a>
+              {% else %}
+              <span class="text-xs" style="color:var(--text-disabled);">Not finished</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-sm" style="color:var(--text-disabled); text-align:center; padding:24px;">No students have started a mock interview yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="interviewLoadingOverlay">
+  <div class="modal" style="width:340px;">
+    <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+      <div class="spinner" style="width:32px;height:32px;border-color:var(--border-strong);border-top-color:var(--accent);margin:0 auto 16px;"></div>
+      <h3 class="text-h3" style="margin-bottom:6px;">Priya and Arjun are reading your resume…</h3>
+      <p class="text-sm" style="color:var(--text-muted);">Analysing the job description and your resume before the interview begins — about 20-30 seconds.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/interview-setup.js') }}"></script>
+{% endblock %}

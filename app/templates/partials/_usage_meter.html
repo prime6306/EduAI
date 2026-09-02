@@ -1,0 +1,8 @@
+{% if status and not status.unlimited %}
+<div class="usage-meter">
+  <div class="usage-meter-track">
+    <div class="usage-meter-fill {{ 'warn' if status.remaining <= 2 else '' }}" style="width:{{ (status.used / status.limit * 100) | round(0) }}%;"></div>
+  </div>
+  <span class="usage-meter-text">{{ status.used }} / {{ status.limit }} {{ usage_feature_label }} used today — resets at midnight</span>
+</div>
+{% endif %}

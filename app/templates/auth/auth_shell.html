@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}EduAI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+</head>
+<body class="auth-page">
+  <div id="flash-area" style="width:400px; max-width:100%;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          {% set cat = category if category in ['success','warning','danger','info'] else 'info' %}
+          <div class="alert alert-{{ cat }}" data-flash>
+            <svg class="icon alert-icon" aria-hidden="true">
+              <use href="{{ url_for('static', filename='icons/lucide.svg') }}#{{ 'check-circle-2' if cat == 'success' else 'alert-triangle' if cat in ['warning','danger'] else 'info' }}"></use>
+            </svg>
+            <div class="alert-body">{{ message }}</div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <a class="auth-logo" href="{{ url_for('auth.login') }}">
+    <svg class="icon mark" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#graduation-cap"></use></svg>
+    <span class="name">EduAI</span>
+  </a>
+
+  {% block auth_content %}{% endblock %}
+
+  <div class="auth-footer">&copy; {{ now.year }} EduAI &middot; MMMUT</div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

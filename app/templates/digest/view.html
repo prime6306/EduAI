@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Digest — {{ digest.week_start.strftime('%b %d').replace(' 0', ' ') }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/digest.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Week of {{ digest.week_start.strftime('%b %d').replace(' 0', ' ') }} – {{ (digest.week_end - timedelta(days=1)).strftime('%b %d, %Y').replace(' 0', ' ') }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">
+      Generated {{ digest.generated_at.strftime('%b %d, %Y at %H:%M UTC').replace(' 0', ' ') }}
+      {% if digest.email_sent %} &middot; <span class="badge badge-success">Emailed</span>{% else %} &middot; <span class="badge badge-neutral">Not emailed</span>{% endif %}
+    </p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('digest.history') }}">All Digests</a>
+</div>
+
+<div class="alert alert-info">
+  <svg class="icon icon-18 alert-icon"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#info"></use></svg>
+  <div class="alert-body">
+    <div class="alert-title">This Week at a Glance</div>
+    {{ digest.summary_paragraph }}
+  </div>
+</div>
+
+<div class="grid-1-1">
+  <div class="card">
+    <div class="card-header"><h3>Attendance</h3></div>
+    <div class="card-body digest-section-body">
+      <div class="digest-metric-row">
+        <div><span class="digest-metric-value">{{ digest.attendance.rate }}%</span><span class="digest-metric-label">Class Rate</span></div>
+        <div><span class="digest-metric-value {{ 'text-success' if digest.attendance.wow_change >= 0 else 'text-danger' }}">{{ '%+.1f' | format(digest.attendance.wow_change) }}</span><span class="digest-metric-label">vs Last Week</span></div>
+        <div><span class="digest-metric-value">{{ digest.attendance.sessions }}</span><span class="digest-metric-label">Sessions Held</span></div>
+      </div>
+      {% if digest.attendance.absent_students %}
+      <p class="text-sm" style="margin-top:10px;"><strong>Missed &gt;50% of sessions:</strong> {{ digest.attendance.absent_students | join(', ') }}</p>
+      {% else %}
+      <p class="text-sm" style="color:var(--text-muted); margin-top:10px;">No students missed more than half of this week's sessions.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Quiz Performance</h3></div>
+    <div class="card-body digest-section-body">
+      <div class="digest-metric-row">
+        <div><span class="digest-metric-value">{{ digest.quiz.total_taken }}</span><span class="digest-metric-label">Quizzes Taken</span></div>
+        <div><span class="digest-metric-value">{{ digest.quiz.avg_score }}%</span><span class="digest-metric-label">Avg Score</span></div>
+        <div><span class="digest-metric-value {{ 'text-success' if digest.quiz.wow_change >= 0 else 'text-danger' }}">{{ '%+.1f' | format(digest.quiz.wow_change) }}</span><span class="digest-metric-label">vs Last Week</span></div>
+      </div>
+      <p class="text-sm" style="margin-top:10px;">
+        <strong>Weakest topic:</strong> {{ digest.quiz.weakest_topic or '—' }}
+        {% if digest.quiz.top_topics %} &middot; <strong>Top topics:</strong> {{ digest.quiz.top_topics | join(', ') }}{% endif %}
+      </p>
+      {% if digest.quiz.inactive_students %}
+      <p class="text-sm" style="margin-top:6px;"><strong>No quiz activity in 7+ days:</strong> {{ digest.quiz.inactive_students | join(', ') }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid-1-1" style="margin-top:16px;">
+  <div class="card">
+    <div class="card-header"><h3>Dropout Risk</h3></div>
+    <div class="card-body digest-section-body">
+      <div class="digest-metric-row">
+        <div><span class="digest-metric-value">{{ digest.dropout.high_count }}</span><span class="digest-metric-label">High Risk Now</span></div>
+        <div><span class="digest-metric-value">{{ digest.dropout.newly_high | length }}</span><span class="digest-metric-label">Newly High</span></div>
+        <div><span class="digest-metric-value">{{ digest.dropout.improved | length }}</span><span class="digest-metric-label">Improved</span></div>
+      </div>
+      {% if digest.dropout.newly_high %}<p class="text-sm" style="margin-top:10px;"><strong>Newly high-risk:</strong> {{ digest.dropout.newly_high | join(', ') }}</p>{% endif %}
+      {% if digest.dropout.improved %}<p class="text-sm" style="margin-top:6px;"><strong>Improved:</strong> {{ digest.dropout.improved | join(', ') }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Wellness <span class="text-xs" style="color:var(--text-muted); text-transform:none;">(anonymised)</span></h3></div>
+    <div class="card-body digest-section-body">
+      <div class="digest-metric-row">
+        <div><span class="digest-metric-value">{{ digest.wellness.sessions }}</span><span class="digest-metric-label">Sessions</span></div>
+        <div><span class="digest-metric-value">{{ digest.wellness.moderate_severe_count }}</span><span class="digest-metric-label">Moderate/Severe</span></div>
+        <div><span class="digest-metric-value {{ 'text-danger' if digest.wellness.crisis_detected else '' }}">{{ 'Yes' if digest.wellness.crisis_detected else 'No' }}</span><span class="digest-metric-label">Crisis Flag</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <div class="card">
+    <div class="card-header"><h3>Platform Activity</h3></div>
+    <div class="card-body digest-section-body">
+      <div class="digest-metric-row">
+        <div><span class="digest-metric-value">{{ digest.activity.doubt_questions }}</span><span class="digest-metric-label">Doubt Solver Qs</span></div>
+        <div><span class="digest-metric-value">{{ digest.activity.pdfs_uploaded }}</span><span class="digest-metric-label">PDFs Uploaded</span></div>
+        <div><span class="digest-metric-value">{{ digest.activity.pipelines_generated }}</span><span class="digest-metric-label">Study Pipelines</span></div>
+        <div><span class="digest-metric-value">{{ digest.activity.top_subject or '—' }}</span><span class="digest-metric-label">Top Subject</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

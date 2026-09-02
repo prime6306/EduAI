@@ -1,0 +1,98 @@
+/* ── Subject tag input (mirrors question-paper's units-tag-input) ──────── */
+.subjects-tag-input {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px; border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md); min-height: 42px;
+}
+.subject-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-light); color: var(--accent);
+  padding: 3px 10px; border-radius: var(--radius-pill); font-size: 0.8125rem;
+}
+.subject-tag button { background: none; border: none; color: inherit; cursor: pointer; font-weight: 700; }
+.subjects-tag-input input { flex: 1; min-width: 160px; border: none; outline: none; font-size: 0.875rem; }
+
+/* ── Slider (matches dropout's slider-row) ──────────────────────────────── */
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.slider-value {
+  min-width: 28px; text-align: center; font-weight: 600;
+  font-size: 0.9375rem; color: var(--text-primary);
+}
+
+/* ── Weekly grid ─────────────────────────────────────────────────────────── */
+.planner-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-3);
+}
+.planner-day {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+.planner-day-header {
+  padding: 10px 12px;
+  background: var(--bg-surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+.planner-day-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.planner-day-empty {
+  color: var(--text-disabled);
+  font-size: 0.8125rem;
+  font-style: italic;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.planner-session {
+  border-left: 3px solid var(--border-strong);
+  background: var(--bg-surface-2);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.planner-session.priority-high   { border-left-color: var(--danger); }
+.planner-session.priority-medium { border-left-color: var(--warning); }
+.planner-session.priority-low    { border-left-color: var(--success); }
+
+.planner-session-subject { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
+.planner-session-topic   { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
+.planner-session-meta {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 6px;
+}
+.planner-session-duration { font-size: 0.75rem; color: var(--text-muted); }
+
+.badge-dot.priority-dot-high   { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.badge-dot.priority-dot-medium { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+.badge-dot.priority-dot-low    { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+/* ── Tips ────────────────────────────────────────────────────────────────── */
+.planner-tips-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.planner-tips-list li { color: var(--text-secondary); font-size: 0.875rem; }
+
+/* ── Responsive: stack days on narrow screens ───────────────────────────── */
+@media (max-width: 1024px) {
+  .planner-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+  .planner-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .planner-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Interview Report · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/interview.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Interview Report{{ (' — ' + student_name) if student_name }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">
+      {{ session.jd_analysis.role_title if session.jd_analysis else '' }}
+      {{ '· ' ~ report.total_questions ~ ' questions across Screening, Competency, and Deep-Dive rounds' }}
+    </p>
+  </div>
+  <a class="btn-ghost text-sm" href="{{ url_for('interview.index') }}">← {{ 'Class Reports' if student_name else 'My Sessions' }}</a>
+</div>
+
+<div class="readiness-banner {{ report.readiness.tone }}">
+  <div>
+    <div class="r-label" style="color:var(--{{ report.readiness.tone }});">{{ report.readiness.label }}</div>
+    <div class="r-desc">{{ report.readiness.description }}</div>
+  </div>
+  <div class="r-score">{{ report.overall_score }}<span style="font-size:1rem; color:var(--text-muted);">/100</span></div>
+</div>
+
+<div class="analysis-grid">
+  <div class="card">
+    <div class="card-header"><h3>Competency Breakdown</h3></div>
+    <div class="card-body">
+      {% for label, score in report.competency_scores.items() %}
+      <div class="competency-bar-row">
+        <div class="c-label">{{ label }}</div>
+        <div class="c-track"><div class="c-fill" style="width:{{ score }}%;"></div></div>
+        <div class="c-value">{{ score }}</div>
+      </div>
+      {% else %}
+      <p class="text-sm" style="color:var(--text-disabled);">No scored answers yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Strengths &amp; Weaknesses</h3></div>
+    <div class="card-body">
+      <div class="section-label">Strongest Answers</div>
+      <ul class="text-sm" style="margin: 4px 0 16px 18px; color:var(--text-secondary);">
+        {% for s in report.strengths %}<li><b>{{ s.question }}</b> — {{ s.why }}</li>{% endfor %}
+      </ul>
+      <div class="section-label">Needs Work</div>
+      <ul class="text-sm" style="margin: 4px 0 0 18px; color:var(--text-secondary);">
+        {% for w in report.weaknesses %}<li><b>{{ w.question }}</b> — {{ w.issue }}</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><h3>Question-by-Question Feedback</h3></div>
+  <div class="card-body">
+    {% for qf in report.question_feedback %}
+    <div class="qa-feedback-item">
+      <div class="meta-row">
+        <span class="badge badge-accent">{{ qf.interviewer }}</span>
+        <span class="badge badge-neutral">{{ qf.competency }}</span>
+        <span class="badge {{ 'badge-success' if qf.quality_score >= 7 else ('badge-warning' if qf.quality_score >= 4 else 'badge-danger') }}">{{ qf.quality_score }}/10 — {{ qf.assessment }}</span>
+      </div>
+      <div class="q-text">{{ qf.question }}</div>
+      <div class="a-text">{{ qf.answer }}</div>
+      <div class="fb-row"><b>What worked:</b> {{ qf.what_was_good }}</div>
+      <div class="fb-row"><b>Could improve:</b> {{ qf.what_could_be_better }}</div>
+      <div class="fb-row"><b>Stronger direction:</b> {{ qf.ideal_direction }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header"><h3>Preparation Plan</h3></div>
+  <div class="card-body">
+    {% for item in report.preparation_plan %}
+    <div class="prep-priority-item">
+      <div class="prep-priority-rank">{{ item.rank }}</div>
+      <div>
+        <div class="prep-priority-topic">{{ item.topic }}</div>
+        <div class="prep-priority-why">{{ item.why }}</div>
+        <ul class="text-sm" style="margin: 0 0 0 18px; color:var(--text-secondary);">
+          {% for ri in item.review_items %}<li>{{ ri }}</li>{% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% else %}
+    <p class="text-sm" style="color:var(--text-disabled);">No preparation plan available.</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% if session.teacher_feedback %}
+<div class="teacher-feedback-box" id="teacherFeedbackDisplay">
+  <div class="tf-header">Note from {{ session.teacher_feedback.teacher_name }}</div>
+  <div class="tf-comment">{{ session.teacher_feedback.comment }}</div>
+</div>
+{% endif %}
+
+{% if current_user.is_teacher %}
+<div class="card" style="margin-top:20px;">
+  <div class="card-header"><h3>Leave Personalised Feedback</h3></div>
+  <div class="card-body">
+    <form id="teacherFeedbackForm" data-feedback-url="{{ url_for('interview_api.api_feedback', sid=session._id) }}">
+      <div class="form-group">
+        <textarea class="form-control" id="teacherFeedbackInput" rows="3" placeholder="e.g. Strong on system design, but review REST vs GraphQL trade-offs before the real interview.">{{ session.teacher_feedback.comment if session.teacher_feedback }}</textarea>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button type="button" class="btn-primary" id="teacherFeedbackSave">Save Comment</button>
+        <span class="text-xs" id="teacherFeedbackStatus" style="color:var(--text-muted);"></span>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/interview-report.js') }}"></script>
+{% endblock %}

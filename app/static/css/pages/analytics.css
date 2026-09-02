@@ -1,0 +1,45 @@
+/* ── Heatmap legend ──────────────────────────────────────────────────────── */
+.heatmap-legend { display: flex; gap: 14px; align-items: center; }
+.heatmap-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--text-muted); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* ── Heatmap tile row ────────────────────────────────────────────────────── */
+.heatmap-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.heatmap-tile {
+  flex: 0 0 150px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+.heatmap-tile:hover { box-shadow: var(--shadow-sm); }
+.heatmap-tile-subject { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.75; }
+.heatmap-tile-topic { font-size: 0.8125rem; font-weight: 600; margin: 4px 0 8px; line-height: 1.3; min-height: 2.4em; }
+.heatmap-tile-score { font-size: 1.375rem; font-weight: 700; }
+.heatmap-tile-meta { font-size: 0.75rem; opacity: 0.75; margin-top: 2px; }
+
+.heatmap-tile.bucket-red   { background: var(--danger-bg);  border-color: var(--danger-border);  color: var(--danger); }
+.heatmap-tile.bucket-amber { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning); }
+.heatmap-tile.bucket-green { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+.legend-dot.bucket-red   { background: var(--danger); }
+.legend-dot.bucket-amber { background: var(--warning); }
+.legend-dot.bucket-green { background: var(--success); }
+
+/* ── Drilldown panel ─────────────────────────────────────────────────────── */
+.drilldown-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.drilldown-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.drilldown-header h4 { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+.drilldown-panel .data-table { background: var(--bg-surface); }
+.row-amber td { background: var(--warning-bg) !important; }

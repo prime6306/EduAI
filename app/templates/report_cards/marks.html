@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Enter Marks · {{ batch.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/report-cards.css') }}">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ batch.title }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ batch.subject }} · {{ batch.student_records|length }} students</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('report_cards.configure', batch_id=batch._id) }}">Continue to Configure &amp; Generate</a>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-body" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <a class="btn-secondary btn-sm" href="{{ url_for('report_cards.template_csv', batch_id=batch._id) }}">Download CSV Template</a>
+    <input type="file" id="csvFileInput" accept=".csv" style="display:none;">
+    <button class="btn-secondary btn-sm" id="importCsvBtn">Import CSV</button>
+    <span class="text-xs" id="importStatus" style="color:var(--text-muted);"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="marks-grid-wrap">
+    <table class="data-table marks-grid">
+      <thead>
+        <tr>
+          <th>Student</th>
+          {% for c in batch.components %}<th>{{ c.name }} (/{{ c.max_marks|int }})</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in batch.student_records %}
+        <tr>
+          <td>{{ r.name }} ({{ r.student_id }})</td>
+          {% for c in batch.components %}
+          <td><input class="cell-input" type="number" data-student="{{ r.student_id }}" data-component="{{ c.name }}"
+                     value="{{ r.ia_marks.get(c.name, '') }}" min="0" max="{{ c.max_marks }}"></td>
+          {% endfor %}
+        </tr>
+        {% else %}
+        <tr><td colspan="{{ batch.components|length + 1 }}" class="table-empty">No students in the roster yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.cell-input').forEach(function (input) {
+    input.addEventListener('change', async function () {
+      await apiFetch('/api/report-cards/{{ batch._id }}/update-cell', {
+        method: 'POST',
+        body: JSON.stringify({ student_id: input.getAttribute('data-student'), component: input.getAttribute('data-component'), value: input.value }),
+      });
+      input.style.borderColor = 'var(--success)';
+      setTimeout(() => { input.style.borderColor = ''; }, 800);
+    });
+  });
+
+  document.getElementById('importCsvBtn').addEventListener('click', () => document.getElementById('csvFileInput').click());
+  document.getElementById('csvFileInput').addEventListener('change', async function () {
+    const file = this.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('csv_file', file);
+    const status = document.getElementById('importStatus');
+    status.textContent = 'Importing...';
+    const resp = await apiFetch('/api/report-cards/{{ batch._id }}/import-csv', { method: 'POST', body: formData });
+    const data = await resp.json();
+    if (resp.ok) {
+      status.textContent = `Updated ${data.updated}, skipped ${data.skipped}.`;
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      status.textContent = data.error || 'Import failed.';
+    }
+  });
+</script>
+{% endblock %}

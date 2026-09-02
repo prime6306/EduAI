@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Question Bank · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/question-paper.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Question Bank</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ questions|length }} question{{ 's' if questions|length != 1 }} saved (auto-deduplicated)</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('question_paper.index') }}">New Paper</a>
+</div>
+
+<form method="GET" action="{{ url_for('question_bank.browse') }}" class="bank-filters">
+  <input class="form-control" type="text" name="subject" value="{{ subject }}" placeholder="Filter by subject...">
+  <select class="form-control" name="type">
+    <option value="">All Types</option>
+    <option value="mcq" {{ 'selected' if q_type == 'mcq' }}>MCQ</option>
+    <option value="short" {{ 'selected' if q_type == 'short' }}>Short Answer</option>
+    <option value="long" {{ 'selected' if q_type == 'long' }}>Long Answer</option>
+  </select>
+  <select class="form-control" name="difficulty">
+    <option value="">All Difficulties</option>
+    <option value="Easy" {{ 'selected' if difficulty == 'Easy' }}>Easy</option>
+    <option value="Medium" {{ 'selected' if difficulty == 'Medium' }}>Medium</option>
+    <option value="Hard" {{ 'selected' if difficulty == 'Hard' }}>Hard</option>
+  </select>
+  <button type="submit" class="btn-secondary">Filter</button>
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Question</th><th>Subject</th><th>Type</th><th>Marks</th><th>Difficulty</th><th>Used</th><th></th></tr></thead>
+      <tbody>
+        {% for q in questions %}
+        <tr id="bq-row-{{ q._id }}">
+          <td style="max-width:320px;">{{ q.text[:80] }}{{ '…' if q.text|length > 80 }}</td>
+          <td>{{ q.subject }}</td>
+          <td><span class="badge badge-neutral">{{ q.type|upper }}</span></td>
+          <td>{{ q.marks }}</td>
+          <td>{{ q.difficulty }}</td>
+          <td>{{ q.used_count }}</td>
+          <td><button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-bq="{{ q._id }}">Delete</button></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="table-empty">No questions in the bank yet — generate a paper to populate it.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-delete-bq]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-delete-bq');
+      if (!confirm('Remove this question from the bank?')) return;
+      const resp = await apiFetch(`/api/question-bank/${id}`, { method: 'DELETE' });
+      if (resp.ok) {
+        const row = document.getElementById(`bq-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+</script>
+{% endblock %}

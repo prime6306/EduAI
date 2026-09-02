@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.subject }} · Question Paper · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/question-paper.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.subject }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.total_marks }} marks · {{ doc.duration }} · {{ doc.sets|length }} set{{ 's' if doc.sets|length != 1 }}</p>
+  </div>
+  <div style="display:flex; gap:8px; align-items:center;">
+    <label class="checkbox-row"><input type="checkbox" id="showAnswersToggle"> Show Answer Key</label>
+  </div>
+</div>
+
+<div class="set-tabs" id="setTabs">
+  {% for s in doc.sets %}
+  <button class="{{ 'active' if loop.first }}" data-set="{{ s.set_label }}">{{ s.set_label }}</button>
+  {% endfor %}
+</div>
+
+<div style="display:flex; gap:8px; margin-bottom:20px;">
+  <a class="btn-secondary" id="exportPdfLink" href="{{ url_for('question_paper.export', paper_id=doc._id, set='Set A', format='pdf') }}">Download PDF</a>
+  <a class="btn-secondary" id="exportDocxLink" href="{{ url_for('question_paper.export', paper_id=doc._id, set='Set A', format='docx') }}">Download DOCX</a>
+</div>
+
+{% for s in doc.sets %}
+<div class="set-panel" id="set-panel-{{ s.set_label|replace(' ', '') }}" style="{{ '' if loop.first else 'display:none;' }}">
+  {% for q in s.questions %}
+  <div class="qp-question-card" data-set="{{ s.set_label }}" data-index="{{ loop.index0 }}">
+    <div class="qp-question-top">
+      <div class="qp-question-text">{{ loop.index }}. {{ q.text }}</div>
+      <div class="qp-question-actions">
+        <button class="btn-icon" title="Regenerate" data-action="regenerate">
+          <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#edit-3"></use></svg>
+        </button>
+        <button class="btn-icon" title="Delete" data-action="delete">
+          <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#trash-2"></use></svg>
+        </button>
+      </div>
+    </div>
+    <div class="qp-question-meta">
+      <span class="badge badge-accent">{{ q.marks }} marks</span>
+      <span class="badge badge-neutral">{{ q.type|upper }}</span>
+      {% if q.difficulty %}<span class="badge badge-neutral">{{ q.difficulty }}</span>{% endif %}
+      {% if q.bloom_level %}<span class="badge badge-neutral">{{ q.bloom_level }}</span>{% endif %}
+    </div>
+
+    {% if q.type == 'mcq' %}
+    {% for opt in q.options %}
+    <div class="qp-mcq-option {{ 'correct answer-key' if loop.index0 == q.correct_index }}">({{ 'ABCD'[loop.index0] }}) {{ opt }}</div>
+    {% endfor %}
+    {% else %}
+    <div class="qp-answer-reveal answer-key">Answer: {{ q.answer }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('setTabs').addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-set]');
+    if (!btn) return;
+    document.querySelectorAll('#setTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.set-panel').forEach(p => p.style.display = 'none');
+    const setLabel = btn.getAttribute('data-set');
+    document.getElementById(`set-panel-${setLabel.replace(' ', '')}`).style.display = 'block';
+    document.getElementById('exportPdfLink').href = `{{ url_for('question_paper.export', paper_id=doc._id) }}?set=${encodeURIComponent(setLabel)}&format=pdf`;
+    document.getElementById('exportDocxLink').href = `{{ url_for('question_paper.export', paper_id=doc._id) }}?set=${encodeURIComponent(setLabel)}&format=docx`;
+  });
+
+  document.querySelectorAll('.qp-mcq-option.correct').forEach(function (el) { el.style.display = 'none'; });
+
+  document.getElementById('showAnswersToggle').addEventListener('change', function () {
+    const checked = this.checked;
+    document.querySelectorAll('.qp-mcq-option.correct').forEach(function (el) { el.style.display = checked ? '' : 'none'; });
+    document.querySelectorAll('.qp-answer-reveal').forEach(function (el) { el.classList.toggle('shown', checked); });
+    const answersParam = checked ? '1' : '0';
+    ['exportPdfLink', 'exportDocxLink'].forEach(function (id) {
+      const link = document.getElementById(id);
+      const url = new URL(link.href, window.location.origin);
+      url.searchParams.set('answers', answersParam);
+      link.href = url.toString();
+    });
+  });
+
+  document.addEventListener('click', async function (e) {
+    const card = e.target.closest('.qp-question-card');
+    if (!card) return;
+    const setLabel = card.getAttribute('data-set');
+    const index = card.getAttribute('data-index');
+
+    if (e.target.closest('[data-action="delete"]')) {
+      if (!confirm('Delete this question?')) return;
+      const resp = await apiFetch('/api/question-paper/delete-question', {
+        method: 'POST', body: JSON.stringify({ paper_id: '{{ doc._id }}', set_label: setLabel, question_index: parseInt(index) }),
+      });
+      if (resp.ok) card.remove();
+    }
+
+    if (e.target.closest('[data-action="regenerate"]')) {
+      const btn = e.target.closest('[data-action="regenerate"]');
+      btn.disabled = true;
+      const resp = await apiFetch('/api/question-paper/regenerate-question', {
+        method: 'POST', body: JSON.stringify({ paper_id: '{{ doc._id }}', set_label: setLabel, question_index: parseInt(index) }),
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        card.querySelector('.qp-question-text').textContent = `${parseInt(index) + 1}. ${data.question.text}`;
+      } else {
+        alert(data.error || 'Could not regenerate.');
+      }
+      btn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

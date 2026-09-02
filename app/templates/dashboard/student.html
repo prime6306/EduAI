@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/announcements.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Good {{ 'morning' if now.hour < 12 else ('afternoon' if now.hour < 18 else 'evening') }}, {{ current_user.name.split(' ')[0] }}</h1>
+    <p class="dashboard-greeting-date">{{ now.strftime('%A, %B %d, %Y') }}</p>
+  </div>
+</div>
+
+{% if not student_id_linked %}
+<div class="alert alert-info">
+  <svg class="icon alert-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#info"></use></svg>
+  <div class="alert-body">
+    <div class="alert-title">Add your Student ID</div>
+    Add your Student ID in <a href="{{ url_for('auth.profile') }}">your profile</a> to link attendance and dropout-risk tracking.
+  </div>
+</div>
+{% endif %}
+
+{% for a in urgent_unread %}
+<div class="urgent-banner" id="urgent-{{ a._id }}">
+  <div class="u-text">🚨 <strong>{{ a.title }}</strong> — {{ a.body_html | striptags | truncate(100) }}</div>
+  <button class="btn-secondary btn-sm" data-dismiss-urgent="{{ a._id }}">Mark as Read</button>
+</div>
+{% endfor %}
+
+{% for c in unseen_corrections %}
+<div class="alert alert-{{ 'success' if c.status == 'Approved' else 'danger' }}" id="correction-{{ c._id }}">
+  <svg class="icon alert-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#{{ 'check-circle-2' if c.status == 'Approved' else 'x-circle' }}"></use></svg>
+  <div class="alert-body">
+    Your attendance correction for {{ c.requested_date.strftime('%b %d, %Y').replace(' 0', ' ') }} was <strong>{{ c.status|lower }}</strong>.
+    {% if c.teacher_comment %}{{ c.teacher_comment }}{% endif %}
+  </div>
+  <button class="alert-dismiss" data-dismiss-correction="{{ c._id }}">
+    <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#x"></use></svg>
+  </button>
+</div>
+{% endfor %}
+
+<div class="grid-metrics section">
+  <div class="metric-card">
+    <div class="metric-label">Attendance Sessions</div>
+    <div class="metric-value">{{ total_sessions }}</div>
+    <div class="metric-delta">{{ 'Last marked ' + last_marked.strftime('%b %d').replace(' 0', ' ') if last_marked else 'No attendance yet' }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Latest Quiz Score</div>
+    <div class="metric-value">{{ quiz_results[-1].score_percent ~ '%' if quiz_results else '—' }}</div>
+    <div class="metric-delta">{{ quiz_results|length }} quizzes taken</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Dropout Risk</div>
+    {% if latest_risk %}
+      <div class="metric-value" style="font-size:1.25rem; margin-top:14px;">
+        <span class="badge badge-{{ 'danger' if latest_risk.risk_level == 'High' else 'warning' if latest_risk.risk_level == 'Medium' else 'success' }}">{{ latest_risk.risk_level }}</span>
+      </div>
+    {% else %}
+      <div class="metric-value" style="font-size:1.25rem; margin-top:14px; color:var(--text-disabled);">Not assessed</div>
+    {% endif %}
+    <div class="metric-delta">Reviewed by your teacher</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Wellness Check-in</div>
+    <div class="metric-value">{{ days_since_wellness if days_since_wellness is not none else '—' }}</div>
+    <div class="metric-delta">{{ 'days ago' if days_since_wellness is not none else 'No check-ins yet' }}</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-label">Quick Actions</div>
+  <div class="tile-row">
+    <a class="tile" href="{{ url_for('nlp.doubt_solver') }}">
+      <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#message-circle"></use></svg>
+      <span class="tile-label">Ask a Doubt</span>
+    </a>
+    <a class="tile" href="{{ url_for('nlp.study_material') }}">
+      <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#book-open"></use></svg>
+      <span class="tile-label">Study Material</span>
+    </a>
+    <a class="tile" href="{{ url_for('nlp.quiz') }}">
+      <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#file-question"></use></svg>
+      <span class="tile-label">Take a Quiz</span>
+    </a>
+    <a class="tile" href="{{ url_for('rag.index') }}">
+      <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#file-text"></use></svg>
+      <span class="tile-label">Ask Your Docs</span>
+    </a>
+  </div>
+</div>
+
+<div class="grid-2-1">
+  <div class="card">
+    <div class="card-header"><h3>Quiz Performance</h3></div>
+    <div class="card-body">
+      <div class="chart-container">
+        {% if quiz_results %}
+          <canvas id="quizChart"></canvas>
+        {% else %}
+          <div class="chart-empty">No quiz attempts yet — take your first quiz to see progress here.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Announcements</h3></div>
+    <div class="card-body">
+      {% if announcements %}
+        {% for a in announcements %}
+          <div class="announcement-row">
+            <div>
+              <div class="announcement-title">{{ a.title }}</div>
+              <div class="announcement-meta">{{ a.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if a.created_at else '' }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-sm" style="color:var(--text-muted);">No announcements yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <div class="card-header"><h3>Recent Attendance</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Date</th><th>Session</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for r in attendance_records %}
+          <tr>
+            <td>{{ r.timestamp.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if r.timestamp else '—' }}</td>
+            <td>{{ r.session_name|default('Class Session') }}</td>
+            <td><span class="badge badge-success">Present</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="table-empty">No attendance records yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-dismiss-urgent]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-dismiss-urgent');
+      await apiFetch(`/api/announcements/read/${id}`, { method: 'POST' });
+      const banner = document.getElementById(`urgent-${id}`);
+      if (banner) banner.remove();
+    });
+  });
+  document.querySelectorAll('[data-dismiss-correction]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-dismiss-correction');
+      await apiFetch(`/api/corrections/seen/${id}`, { method: 'POST' });
+      const el = document.getElementById(`correction-${id}`);
+      if (el) el.remove();
+    });
+  });
+</script>
+{% if quiz_results %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+  new Chart(document.getElementById('quizChart'), {
+    type: 'line',
+    data: {
+      labels: [{% for r in quiz_results %}"{{ r.timestamp.strftime('%b %d').replace(' 0', ' ') if r.timestamp else loop.index }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{
+        label: 'Score %',
+        data: [{% for r in quiz_results %}{{ r.score_percent|default(0) }}{{ ',' if not loop.last }}{% endfor %}],
+        borderColor: EduAIChartColors.accent,
+        backgroundColor: 'rgba(29, 78, 216, 0.08)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { min: 0, max: 100, grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

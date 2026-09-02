@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Correction Requests · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/announcements.css') }}">{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Attendance Correction Requests</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ items|length }} request{{ 's' if items|length != 1 }}</p>
+  </div>
+</div>
+
+<div class="category-filter-tabs">
+  {% for s in ['Pending', 'Approved', 'Rejected', 'All'] %}
+  <a href="{{ url_for('corrections.queue', status=s) }}"><button class="{{ 'active' if s == status }}">{{ s }}</button></a>
+  {% endfor %}
+</div>
+
+<div style="display:flex; gap:8px; margin-bottom:14px;">
+  <button class="btn-secondary btn-sm" id="bulkApproveBtn" disabled>Approve Selected</button>
+  <button class="btn-secondary btn-sm" id="bulkRejectBtn" disabled>Reject Selected</button>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th><input type="checkbox" id="selectAll"></th><th>Student</th><th>Date</th><th>Reason</th><th>Explanation</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for r in items %}
+        <tr id="corr-row-{{ r._id }}">
+          <td>{% if r.status == 'Pending' %}<input type="checkbox" class="corr-checkbox" value="{{ r._id }}">{% endif %}</td>
+          <td>{{ students.get(r.student_id, r.student_id) }}</td>
+          <td>{{ r.requested_date.strftime('%b %d, %Y').replace(' 0', ' ') if r.requested_date else '—' }}</td>
+          <td>{{ r.reason_category }}</td>
+          <td style="max-width:280px;">{{ r.explanation }}{% if r.proof_filename %} <a href="{{ url_for('corrections.proof', filename=r.proof_filename) }}" target="_blank">[proof]</a>{% endif %}</td>
+          <td><span class="badge badge-{{ 'success' if r.status == 'Approved' else 'danger' if r.status == 'Rejected' else 'warning' }}">{{ r.status }}</span></td>
+          <td>
+            {% if r.status == 'Pending' %}
+            <button class="btn-ghost text-sm" style="color:var(--success);" data-approve="{{ r._id }}">Approve</button>
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-reject="{{ r._id }}">Reject</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="table-empty">No requests in this view.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const selectAll = document.getElementById('selectAll');
+  const bulkApproveBtn = document.getElementById('bulkApproveBtn');
+  const bulkRejectBtn = document.getElementById('bulkRejectBtn');
+
+  function updateBulkButtons() {
+    const checked = document.querySelectorAll('.corr-checkbox:checked').length;
+    bulkApproveBtn.disabled = checked === 0;
+    bulkRejectBtn.disabled = checked === 0;
+  }
+  selectAll.addEventListener('change', function () {
+    document.querySelectorAll('.corr-checkbox').forEach(cb => cb.checked = selectAll.checked);
+    updateBulkButtons();
+  });
+  document.querySelectorAll('.corr-checkbox').forEach(cb => cb.addEventListener('change', updateBulkButtons));
+
+  document.querySelectorAll('[data-approve]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-approve');
+      const resp = await apiFetch(`/api/corrections/approve/${id}`, { method: 'POST' });
+      if (resp.ok) window.location.reload();
+    });
+  });
+  document.querySelectorAll('[data-reject]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const reason = prompt('Reason for rejection (min 10 characters):');
+      if (!reason) return;
+      const id = btn.getAttribute('data-reject');
+      const resp = await apiFetch(`/api/corrections/reject/${id}`, { method: 'POST', body: JSON.stringify({ reason }) });
+      const data = await resp.json();
+      if (resp.ok) window.location.reload();
+      else alert(data.error || 'Could not reject.');
+    });
+  });
+
+  bulkApproveBtn.addEventListener('click', async function () {
+    const ids = Array.from(document.querySelectorAll('.corr-checkbox:checked')).map(cb => cb.value);
+    if (!confirm(`Approve ${ids.length} request(s)?`)) return;
+    await apiFetch('/api/corrections/bulk-approve', { method: 'POST', body: JSON.stringify({ ids }) });
+    window.location.reload();
+  });
+  bulkRejectBtn.addEventListener('click', async function () {
+    const ids = Array.from(document.querySelectorAll('.corr-checkbox:checked')).map(cb => cb.value);
+    const reason = prompt('Reason for rejection (applied to all selected):');
+    if (!reason) return;
+    await apiFetch('/api/corrections/bulk-reject', { method: 'POST', body: JSON.stringify({ ids, reason }) });
+    window.location.reload();
+  });
+</script>
+{% endblock %}

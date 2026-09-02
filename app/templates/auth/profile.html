@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "partials/_form_macros.html" import render_field %}
+{% block title %}Profile · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Profile</h1>
+    <p class="text-sm subtitle" style="color:var(--text-muted);">View and update your account details.</p>
+  </div>
+</div>
+
+<div class="grid-2-1">
+  <div class="card">
+    <div class="card-header"><h3>Account Details</h3></div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('auth.profile') }}" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_field(form.name) }}
+        {{ render_field(form.branch) }}
+        {{ render_field(form.year) }}
+        {{ render_field(form.student_id) }}
+        {{ form.submit(class_="btn-primary") }}
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Account</h3></div>
+    <div class="card-body" style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <div class="text-2xs" style="color:var(--text-muted); text-transform:uppercase;">Email</div>
+        <div class="text-sm" style="color:var(--text-primary);">{{ current_user.email }}</div>
+      </div>
+      <div>
+        <div class="text-2xs" style="color:var(--text-muted); text-transform:uppercase;">Role</div>
+        <span class="badge badge-accent">{{ current_user.role|capitalize }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

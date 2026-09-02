@@ -1,0 +1,42 @@
+/* ==========================================================================
+   attendance.css — webcam preview, photo preview, result rows, enroll drop
+   (tab bar and dropzone are shared, defined in components.css)
+   ========================================================================== */
+
+.photo-preview-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.photo-preview-row img { max-width: 320px; border-radius: var(--radius-md); border: 1px solid var(--border); }
+.photo-preview-meta { flex: 1; min-width: 200px; }
+
+.result-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+  font-size: 0.875rem;
+}
+.result-row.marked { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+.result-row.spoof { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.result-row.duplicate { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
+.result-row.unknown, .result-row.antispoof_unavailable { background: var(--bg-surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+.result-row .r-timings { margin-left: auto; font-size: 0.75rem; color: inherit; opacity: 0.75; font-family: 'JetBrains Mono', monospace; }
+
+.webcam-wrap { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.webcam-video, .webcam-canvas {
+  width: 100%; max-width: 480px; aspect-ratio: 4/3;
+  border-radius: var(--radius-lg); background: #111827;
+  border: 1px solid var(--border);
+}
+.webcam-controls { display: flex; gap: 10px; }
+.cooldown-note { font-size: 0.8125rem; color: var(--text-muted); }
+
+.enroll-drop {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.enroll-drop:hover { border-color: var(--accent); }
+.enroll-drop img { max-width: 100%; max-height: 140px; border-radius: var(--radius-sm); }

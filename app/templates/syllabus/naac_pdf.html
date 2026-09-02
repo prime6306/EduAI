@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ doc.subject }} - NAAC Report</title>
+<style>
+  @page { size: A4; margin: 2.2cm 2cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; color: #111827; font-size: 10.5pt; line-height: 1.5; }
+  h1 { font-size: 16pt; margin: 0 0 4px; }
+  .meta { color: #6B7280; font-size: 9pt; margin-bottom: 4px; }
+  .summary { background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 6px; padding: 12px 14px; margin: 16px 0; font-size: 9.5pt; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td { border: 1px solid #E5E7EB; padding: 6px 8px; text-align: left; font-size: 9pt; }
+  th { background: #F3F4F6; }
+</style>
+</head>
+<body>
+  <h1>{{ doc.subject }} — Syllabus Progress Report</h1>
+  <div class="meta">Teacher: {{ teacher_name }} &middot; {{ doc.branch }}, Year {{ doc.year }}, Semester {{ doc.semester }} &middot; Academic Year {{ doc.academic_year }}</div>
+  <div class="meta">Exam Date: {{ doc.exam_date.strftime('%B %d, %Y').replace(' 0', ' ') if doc.exam_date else '—' }} &middot; Report generated: {{ progress.overall_pct }}% complete</div>
+
+  <div class="summary">{{ summary }}</div>
+
+  <table>
+    <thead><tr><th>Unit</th><th>Topics Covered</th><th>Total Topics</th><th>Completion</th></tr></thead>
+    <tbody>
+      {% for u in progress.per_unit %}
+      <tr><td>Unit {{ u.number }}: {{ u.title }}</td><td>{{ u.covered }}</td><td>{{ u.total }}</td><td>{{ u.pct }}%</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

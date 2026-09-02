@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Build Test · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.title }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.subject }} · <span class="badge badge-neutral">{{ doc.status|capitalize }}</span></p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('tests.preview', test_id=doc._id) }}">Preview</a>
+    <button class="btn-primary" id="publishBtn">Publish Test</button>
+  </div>
+</div>
+
+<div class="grid-2-1">
+  <div>
+    <div class="card">
+      <div class="card-header"><h3>Add Questions</h3></div>
+      <div class="card-body">
+        <div class="builder-method-tabs">
+          <button class="active" data-method="ai">AI Generate</button>
+          <button data-method="bank">Question Bank</button>
+          <button data-method="manual">Write Manually</button>
+        </div>
+
+        <div class="builder-method-panel active" id="method-ai">
+          <div class="grid-1-1">
+            <div class="form-group"><label class="form-label">Topic</label><input class="form-control" id="aiTopic" value="{{ doc.subject }}"></div>
+            <div class="form-group"><label class="form-label">Type</label>
+              <select class="form-control" id="aiType"><option value="mcq">MCQ</option><option value="tf">True/False</option><option value="short">Short Answer</option><option value="long">Long Answer</option></select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Number of Questions</label><input class="form-control" type="number" id="aiCount" value="5" min="1" max="20"></div>
+          <button class="btn-secondary" id="aiGenerateBtn">Generate Candidates</button>
+          <div id="aiCandidates" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="builder-method-panel" id="method-bank">
+          <div class="form-group"><input class="form-control" id="bankSearchInput" placeholder="Search question bank by subject..." value="{{ doc.subject }}"></div>
+          <button class="btn-secondary btn-sm" id="bankSearchBtn">Search</button>
+          <div class="bank-picker-list" id="bankResults" style="margin-top:12px;"></div>
+          <button class="btn-primary" id="addFromBankBtn" style="margin-top:10px;" disabled>Add Selected to Test</button>
+        </div>
+
+        <div class="builder-method-panel" id="method-manual">
+          <div class="manual-type-select">
+            <button class="active" data-mtype="mcq">MCQ</button>
+            <button data-mtype="short">Short Answer</button>
+            <button data-mtype="long">Long Answer</button>
+            <button data-mtype="tf">True/False</button>
+          </div>
+          <div class="form-group"><label class="form-label">Question Text</label><textarea class="form-control" id="manualText" rows="2"></textarea></div>
+          <div id="manualOptionsWrap">
+            <div class="form-group"><label class="form-label">Options</label>
+              <input class="form-control" id="manualOpt0" placeholder="Option A" style="margin-bottom:6px;">
+              <input class="form-control" id="manualOpt1" placeholder="Option B" style="margin-bottom:6px;">
+              <input class="form-control" id="manualOpt2" placeholder="Option C" style="margin-bottom:6px;">
+              <input class="form-control" id="manualOpt3" placeholder="Option D">
+            </div>
+            <div class="form-group"><label class="form-label">Correct Option</label>
+              <select class="form-control" id="manualCorrectIdx"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
+            </div>
+          </div>
+          <div id="manualAnswerWrap" style="display:none;">
+            <div class="form-group"><label class="form-label">Model Answer</label><textarea class="form-control" id="manualAnswer" rows="2"></textarea></div>
+          </div>
+          <div class="grid-1-1">
+            <div class="form-group"><label class="form-label">Marks</label><input class="form-control" type="number" id="manualMarks" value="1" min="1"></div>
+            <div class="form-group"><label class="form-label">Explanation (optional)</label><input class="form-control" id="manualExplanation"></div>
+          </div>
+          <button class="btn-primary" id="addManualBtn">Add Question</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:24px;">Questions ({{ doc.questions|length }}) — drag to reorder</div>
+    <div class="test-question-list" id="questionList">
+      {% for q in doc.questions %}
+      <div class="test-question-item" draggable="true" data-id="{{ q.id }}">
+        <svg class="icon icon-16 drag-handle" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#menu"></use></svg>
+        <div class="tq-body">
+          <div class="tq-text">{{ loop.index }}. {{ q.text }}</div>
+          <span class="badge badge-neutral">{{ q.type|upper }}</span>
+          <span class="badge badge-accent">{{ q.marks }} marks</span>
+        </div>
+        <div class="tq-actions">
+          <button class="btn-icon" data-delete-q="{{ q.id }}"><svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#trash-2"></use></svg></button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-header"><h3>Publish Settings</h3></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Available From</label>
+          <input class="form-control" type="datetime-local" id="availableFrom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Available Until</label>
+          <input class="form-control" type="datetime-local" id="availableUntil">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign To</label>
+          <select class="form-control" id="assignedTo" multiple size="6">
+            {% for s in students %}<option value="{{ s.student_id }}">{{ s.name }} ({{ s.student_id }})</option>{% endfor %}
+          </select>
+          <span class="form-hint">Leave empty for entire class.</span>
+        </div>
+        <div class="checkbox-row" style="margin-bottom:10px;"><input type="checkbox" id="shuffleQuestions"><label for="shuffleQuestions">Shuffle question order per student</label></div>
+        <div class="checkbox-row"><input type="checkbox" id="shuffleOptions"><label for="shuffleOptions">Shuffle MCQ options per student</label></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.TEST_ID = "{{ doc._id }}";</script>
+<script src="{{ url_for('static', filename='js/test-builder.js') }}"></script>
+{% endblock %}

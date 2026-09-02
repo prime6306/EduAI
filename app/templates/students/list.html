@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Students · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/attendance.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Student Management</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ students|length }} student{{ 's' if students|length != 1 }} registered</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn-secondary" id="reencodeBtn">Re-encode All</button>
+    <a class="btn-secondary" href="{{ url_for('students.export_csv') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#download"></use></svg>
+      Export CSV
+    </a>
+    <a class="btn-primary" href="{{ url_for('students.add_student') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+      Add Student
+    </a>
+  </div>
+</div>
+
+<form method="GET" action="{{ url_for('students.list_students') }}" class="notes-search" style="max-width:280px; margin-bottom:16px;">
+  <input class="form-control" type="text" name="q" value="{{ search }}" placeholder="Search by ID or name...">
+</form>
+
+<div id="reencodeStatus" style="margin-bottom:16px;"></div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Branch</th><th>Year</th><th>Total Attendance</th><th>Face Enrolled</th><th></th></tr></thead>
+      <tbody>
+        {% for s in students %}
+        <tr id="student-row-{{ s.student_id }}">
+          <td>{{ s.student_id }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.branch }}</td>
+          <td>{{ s.year }}</td>
+          <td>{{ s.total_attendance }}</td>
+          <td>
+            {% if s.face_enrolled %}<span class="badge badge-success">Yes</span>
+            {% else %}<span class="badge badge-neutral">No</span>{% endif %}
+          </td>
+          <td>
+            <button class="btn-ghost text-sm" data-grant-bypass="{{ s.student_id }}" title="Grant a 24-hour AI feature quota bypass">Grant 24h Bypass</button>
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-student="{{ s.student_id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="table-empty">No students registered yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('reencodeBtn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.classList.add('loading');
+    const statusEl = document.getElementById('reencodeStatus');
+    try {
+      const resp = await apiFetch('/api/students/reencode', { method: 'POST' });
+      const data = await resp.json();
+      statusEl.innerHTML = `<div class="alert alert-info">Re-encoded ${data.succeeded.length} student(s)` +
+        (data.failed.length ? `, ${data.failed.length} failed: ${data.failed.join(', ')}` : '') + `.</div>`;
+    } catch (e) {
+      statusEl.innerHTML = '<div class="alert alert-danger">Re-encoding failed. Please try again.</div>';
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  });
+
+  document.querySelectorAll('[data-delete-student]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-delete-student');
+      if (!confirm(`Delete student ${id}? This removes their attendance history too.`)) return;
+      const resp = await apiFetch(`/api/students/${id}`, { method: 'DELETE' });
+      if (resp.ok) {
+        const row = document.getElementById(`student-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-grant-bypass]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-grant-bypass');
+      if (!confirm(`Grant a 24-hour AI feature quota bypass to student ${id}?`)) return;
+      const resp = await apiFetch(`/api/students/${id}/rate-limit-bypass`, { method: 'POST' });
+      const data = await resp.json();
+      if (resp.ok && data.granted) {
+        btn.textContent = 'Bypass Granted ✓';
+        btn.disabled = true;
+      } else {
+        alert(data.error || 'Could not grant a bypass for this student.');
+      }
+    });
+  });
+</script>
+{% endblock %}

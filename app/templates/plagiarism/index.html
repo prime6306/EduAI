@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Plagiarism Detector · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/plagiarism.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Plagiarism Detector</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Dual-method (n-gram + embedding) similarity across submissions.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('plagiarism.index') }}" enctype="multipart/form-data" id="plagForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="mode" id="modeField" value="files">
+
+      <div class="mode-toggle">
+        <button type="button" class="active" data-mode="files">Upload Files</button>
+        <button type="button" data-mode="paste">Paste Text</button>
+      </div>
+
+      <div id="filesPanel">
+        <div class="form-group">
+          <label class="form-label">Submission Files (PDF, DOCX, TXT — 2 to 10 files)</label>
+          <input class="form-control" type="file" name="files" accept=".pdf,.docx,.txt" multiple>
+          <span class="form-hint">Student names are taken from filenames.</span>
+        </div>
+      </div>
+
+      <div id="pastePanel" style="display:none;">
+        <div id="pasteRows"></div>
+        <button type="button" class="btn-secondary btn-sm" id="addPasteRowBtn">+ Add Submission</button>
+      </div>
+
+      <div class="form-group" style="margin-top:20px;">
+        <label class="form-label">Similarity Threshold: <span id="thresholdLabel">{{ threshold }}</span></label>
+        <input type="range" name="threshold" id="thresholdSlider" min="0.5" max="0.95" step="0.01" value="{{ threshold }}" style="width:100%; accent-color:var(--accent);">
+      </div>
+
+      <button type="submit" class="btn-primary btn-block btn-lg" id="checkBtn">Check for Plagiarism</button>
+      {% include "partials/_usage_meter.html" %}
+    </form>
+  </div>
+</div>
+
+{% if result %}
+<div class="section-label">Results</div>
+<div class="alert alert-info">
+  <svg class="icon alert-icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#info"></use></svg>
+  <div class="alert-body">{{ result.total_submissions }} submissions checked, {{ result.suspicious_pairs|length }} suspicious pair{{ 's' if result.suspicious_pairs|length != 1 }} found (threshold {{ result.threshold }}).</div>
+</div>
+
+{% for p in result.suspicious_pairs %}
+<div class="pair-card {{ p.severity }}">
+  <div class="pair-names">{{ p.student_a }} &harr; {{ p.student_b }}</div>
+  <div class="pair-scores">
+    <div class="pair-score-item"><span class="val">{{ p.ngram_score }}%</span>N-gram</div>
+    <div class="pair-score-item"><span class="val">{{ p.embedding_score }}%</span>Embedding</div>
+    <div class="pair-score-item"><span class="val">{{ p.combined_score }}%</span>Combined</div>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill {{ 'danger' if p.severity == 'red' else 'warning' }}" style="width:{{ p.combined_score }}%;"></div>
+  </div>
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center; padding:40px; color:var(--text-muted);">No suspicious pairs found above the threshold.</div></div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const modeField = document.getElementById('modeField');
+  const filesPanel = document.getElementById('filesPanel');
+  const pastePanel = document.getElementById('pastePanel');
+  document.querySelectorAll('.mode-toggle button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.mode-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mode = btn.getAttribute('data-mode');
+      modeField.value = mode;
+      filesPanel.style.display = mode === 'files' ? 'block' : 'none';
+      pastePanel.style.display = mode === 'paste' ? 'block' : 'none';
+    });
+  });
+
+  const pasteRows = document.getElementById('pasteRows');
+  function addPasteRow() {
+    if (pasteRows.children.length >= 10) return;
+    const div = document.createElement('div');
+    div.className = 'paste-row';
+    div.innerHTML = `
+      <input class="form-control" type="text" name="paste_name[]" placeholder="Student name">
+      <textarea class="form-control" name="paste_text[]" placeholder="Paste submission text..."></textarea>
+      <button type="button" class="btn-icon" onclick="this.closest('.paste-row').remove()">
+        <svg class="icon icon-16" aria-hidden="true"><use href="/static/icons/lucide.svg#trash-2"></use></svg>
+      </button>
+    `;
+    pasteRows.appendChild(div);
+  }
+  document.getElementById('addPasteRowBtn').addEventListener('click', addPasteRow);
+  addPasteRow();
+  addPasteRow();
+
+  document.getElementById('thresholdSlider').addEventListener('input', function () {
+    document.getElementById('thresholdLabel').textContent = this.value;
+  });
+
+  document.getElementById('plagForm').addEventListener('submit', function () {
+    const btn = document.getElementById('checkBtn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+  });
+</script>
+{% endblock %}

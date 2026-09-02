@@ -1,0 +1,10 @@
+<div class="helpline-card">
+  <h4>Crisis Helplines — India</h4>
+  {% for h in helplines %}
+  <div class="helpline-item">
+    <div class="h-name">{{ h.name }}</div>
+    <div class="h-number">{{ h.number }}</div>
+    <div class="h-hours">{{ h.hours }}</div>
+  </div>
+  {% endfor %}
+</div>

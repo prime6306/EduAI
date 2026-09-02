@@ -1,0 +1,14 @@
+.audit-filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.audit-filter-row .form-group { min-width: 140px; flex: 1; }
+.audit-filter-row input[type="date"] { min-width: 130px; }
+
+.audit-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

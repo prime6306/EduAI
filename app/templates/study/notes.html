@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}My Notes · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/study.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">My Saved Notes</h1>
+    <p class="text-sm" style="color:var(--text-muted);">All the study material you've generated.</p>
+  </div>
+</div>
+
+<form method="GET" action="{{ url_for('nlp.study_material_notes') }}" class="notes-search">
+  <input class="form-control" type="text" name="q" value="{{ search }}" placeholder="Search by topic or subject...">
+</form>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Topic</th><th>Subject</th><th>Branch</th><th>Generated</th><th></th></tr></thead>
+      <tbody>
+        {% for n in notes %}
+        <tr id="note-row-{{ n._id }}">
+          <td>{{ n.topic }}</td>
+          <td>{{ n.subject }}</td>
+          <td>{{ n.branch }}</td>
+          <td>{{ n.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if n.created_at else '—' }}</td>
+          <td style="display:flex; gap:6px;">
+            <a class="btn-ghost text-sm" href="{{ url_for('nlp.study_material_result', pipeline_id=n._id) }}">View</a>
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-note="{{ n._id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="table-empty">No saved notes yet — generate your first study material above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-delete-note]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-delete-note');
+      if (!confirm('Delete this note? This cannot be undone.')) return;
+      const resp = await apiFetch(`/api/notes/${id}`, { method: 'DELETE' });
+      if (resp.ok) {
+        const row = document.getElementById(`note-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Check-in · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/wellness.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">A Quick Check-in</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Seven quick questions about the last two weeks. Answer honestly — this is just for you.</p>
+  </div>
+</div>
+
+<div class="grid-2-1">
+  <form method="POST" action="{{ url_for('wellness.assess_view') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for q in questions %}
+    <div class="question-card">
+      <div class="question-number">Question {{ loop.index }} of {{ questions|length }}</div>
+      <div class="question-text">{{ q.text }}</div>
+      <div class="option-radio-row">
+        {% for opt in q.options %}
+        <label class="option-radio">
+          <input type="radio" name="q{{ q.id }}" value="{{ loop.index0 }}" required>
+          {{ opt }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn-primary btn-block btn-lg">Submit Check-in</button>
+  </form>
+
+  <div>
+    {% include "partials/helplines.html" %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.option-radio').forEach(function (label) {
+    label.addEventListener('click', function () {
+      const name = label.querySelector('input').name;
+      document.querySelectorAll(`input[name="${name}"]`).forEach(function (input) {
+        input.closest('.option-radio').classList.remove('selected');
+      });
+      label.classList.add('selected');
+    });
+  });
+</script>
+{% endblock %}

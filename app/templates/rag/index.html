@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}PDF Q&A · EduAI{% endblock %}
+{% block content_area_class %}rag-area{% endblock %}
+{% block content_inner_class %}rag-inner{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/rag.css') }}">{% endblock %}
+
+{% block content %}
+<div class="rag-shell">
+  <aside class="rag-docs-panel">
+    <div>
+      <h4 class="text-h4" style="margin-bottom:2px;">PDF Q&A</h4>
+      <p class="text-xs" style="color:var(--text-muted);">Ask questions grounded in your own documents.</p>
+    </div>
+
+    <button class="btn-secondary btn-block btn-sm" id="uploadBtn">
+      <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#upload"></use></svg>
+      Upload Document
+    </button>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" style="display:none;">
+
+    <div class="sidebar-divider" style="margin:0; background:var(--border);"></div>
+
+    <div>
+      <div class="text-2xs" style="color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">My Documents</div>
+      <div id="docList">
+        {% for d in documents %}
+        <div class="rag-doc-item" data-id="{{ d.pdf_id }}" data-name="{{ d.filename }}">
+          <div class="doc-name">{{ d.filename }}</div>
+          <div class="doc-meta">{{ d.chunk_count }} chunks · {{ d.created_at.strftime('%b %d').replace(' 0', ' ') if d.created_at else '' }}</div>
+        </div>
+        {% else %}
+        <div class="rag-doc-empty">No documents yet — upload one to get started.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <a class="btn-ghost text-sm" href="{{ url_for('rag.library') }}" style="margin-top:auto;">Manage documents →</a>
+  </aside>
+
+  <div class="rag-main">
+    <div class="rag-main-header">
+      <h3 class="text-h3" id="selectedDocTitle">Select a document</h3>
+    </div>
+
+    <div class="rag-qa-area" id="qaArea">
+      <div class="rag-empty-state" id="ragEmptyState">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#file-text"></use></svg>
+        <p class="text-sm">Select a document on the left to start asking questions.</p>
+      </div>
+    </div>
+
+    <div class="rag-input-bar" id="ragInputBar" style="display:none;">
+      <div class="rag-input-row">
+        <input class="form-control" id="ragQuestionInput" type="text" placeholder="Ask a question about this document...">
+        <button class="btn-primary" id="ragAskBtn">
+          Ask
+          <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-right"></use></svg>
+        </button>
+      </div>
+      {% include "partials/_usage_meter.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="{{ url_for('static', filename='js/rag-chat.js') }}"></script>
+{% endblock %}

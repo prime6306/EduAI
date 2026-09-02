@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}CO-PO Attainment Mapping · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/co-po.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">CO-PO Attainment Mapping</h1>
+    <p class="text-sm" style="color:var(--text-muted);">NBA/NAAC-ready Course and Program Outcome attainment reporting.</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('co_po.summary') }}">Department Summary</a>
+    <button class="btn-primary" id="newSubjectBtn">+ New Subject</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Semester</th><th>Academic Year</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for s in setups %}
+        <tr id="setup-row-{{ s._id }}">
+          <td>{{ s.subject }}</td>
+          <td>{{ s.semester or '—' }}</td>
+          <td>{{ s.academic_year or '—' }}</td>
+          <td><span class="badge {{ 'badge-success' if s.status == 'Calculated' else 'badge-neutral' }}">{{ s.status }}</span></td>
+          <td style="display:flex; gap:6px;">
+            {% if s.status == 'Calculated' %}
+            <a class="btn-ghost text-sm" href="{{ url_for('co_po.report', subject_id=s._id) }}">Report</a>
+            {% else %}
+            <a class="btn-ghost text-sm" href="{{ url_for('co_po.setup', subject_id=s._id) }}">Continue</a>
+            {% endif %}
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-setup="{{ s._id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="table-empty">No subjects set up yet — click "+ New Subject" to start your first CO-PO report.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newSubjectModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header"><h3 class="text-h3">New Subject</h3></div>
+    <form method="POST" action="{{ url_for('co_po.new_setup') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Subject <span class="required">*</span></label>
+          <input class="form-control" type="text" name="subject" required placeholder="e.g. Signals & Systems">
+        </div>
+        <div class="grid-1-1">
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            <input class="form-control" type="text" name="semester" placeholder="e.g. 5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Academic Year</label>
+            <input class="form-control" type="text" name="academic_year" placeholder="e.g. 2026-27">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="cancelNewSubject">Cancel</button>
+        <button type="submit" class="btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const modal = document.getElementById('newSubjectModal');
+  document.getElementById('newSubjectBtn').addEventListener('click', () => { modal.style.display = 'flex'; });
+  document.getElementById('cancelNewSubject').addEventListener('click', () => { modal.style.display = 'none'; });
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+  document.querySelectorAll('[data-delete-setup]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-delete-setup');
+      if (!confirm('Delete this CO-PO setup and its results? This cannot be undone.')) return;
+      const resp = await apiFetch(`/api/co-po/${id}/delete`, { method: 'POST' });
+      if (resp.ok) {
+        const row = document.getElementById(`setup-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+</script>
+{% endblock %}

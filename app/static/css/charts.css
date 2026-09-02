@@ -1,0 +1,29 @@
+/* ==========================================================================
+   charts.css — chart containers, legend overrides
+   ========================================================================== */
+
+.chart-container {
+  position: relative;
+  height: 260px;
+  width: 100%;
+}
+
+.chart-container.chart-sm { height: 180px; }
+.chart-container.chart-lg { height: 320px; }
+
+.chart-legend-custom {
+  display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.chart-legend-custom .legend-item { display: flex; align-items: center; gap: 6px; }
+.chart-legend-custom .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%;
+  color: var(--text-disabled);
+  font-size: 0.875rem;
+}

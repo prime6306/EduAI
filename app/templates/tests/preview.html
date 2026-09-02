@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Preview · {{ doc.title }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/tests.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.title }} <span class="badge badge-neutral">Preview</span></h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.subject }} · {{ doc.questions|length }} questions · {{ doc.time_limit_minutes and (doc.time_limit_minutes ~ ' min') or 'No time limit' }}</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('tests.build', test_id=doc._id) }}">Back to Builder</a>
+</div>
+
+{% if doc.instructions %}
+<div class="alert alert-info"><div class="alert-body">{{ doc.instructions }}</div></div>
+{% endif %}
+
+{% for q in doc.questions %}
+<div class="qp-question-card">
+  <div class="qp-question-top">
+    <div class="qp-question-text">{{ loop.index }}. {{ q.text }}</div>
+  </div>
+  <div class="qp-question-meta"><span class="badge badge-accent">{{ q.marks }} marks</span><span class="badge badge-neutral">{{ q.type|upper }}</span></div>
+  {% if q.type in ['mcq', 'tf'] %}
+    {% for opt in q.options %}
+    <div class="qp-mcq-option {{ 'correct' if opt == q.correct_answer }}">({{ 'ABCD'[loop.index0] if q.type == 'mcq' else '' }}) {{ opt }}{{ ' [correct]' if opt == q.correct_answer }}</div>
+    {% endfor %}
+  {% else %}
+  <div class="qp-answer-reveal shown">Model answer: {{ q.correct_answer }}</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center; padding:40px; color:var(--text-muted);">No questions added yet.</div></div>
+{% endfor %}
+{% endblock %}

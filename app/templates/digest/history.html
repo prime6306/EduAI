@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Weekly Digest · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/digest.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Weekly Class Digest</h1>
+    <p class="text-sm" style="color:var(--text-muted);">A data-driven summary of your class, generated automatically every Sunday night.</p>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <label class="digest-toggle">
+      <input type="checkbox" id="emailToggle" {{ 'checked' if email_enabled }}>
+      <span>Email me weekly</span>
+    </label>
+    <button class="btn-primary" id="sendNowBtn">Send Now</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Week</th><th>Attendance</th><th>Avg Quiz Score</th><th>High Risk</th><th>Email</th><th></th></tr></thead>
+      <tbody>
+        {% for d in digests %}
+        <tr>
+          <td>{{ d.week_start.strftime('%b %d').replace(' 0', ' ') }} – {{ (d.week_end - timedelta(days=1)).strftime('%b %d, %Y').replace(' 0', ' ') }}</td>
+          <td>{{ d.attendance.rate }}%</td>
+          <td>{{ d.quiz.avg_score }}%</td>
+          <td>
+            {% if d.dropout.high_count %}<span class="badge badge-danger">{{ d.dropout.high_count }}</span>{% else %}<span class="badge badge-success">0</span>{% endif %}
+          </td>
+          <td>
+            {% if d.email_sent %}<span class="badge badge-success">Sent</span>{% else %}<span class="badge badge-neutral">Not sent</span>{% endif %}
+          </td>
+          <td><a class="btn-ghost text-sm" href="{{ url_for('digest.view', digest_id=d._id) }}">View</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No digests yet — one will be generated automatically this Sunday, or click "Send Now" above.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('emailToggle').addEventListener('change', async function () {
+    const enabled = this.checked;
+    try {
+      await apiFetch('{{ url_for("digest_api.toggle_email") }}', {
+        method: 'POST', body: JSON.stringify({ enabled }),
+      });
+    } catch (err) {
+      this.checked = !enabled;
+      alert('Could not update your email preference — please try again.');
+    }
+  });
+
+  document.getElementById('sendNowBtn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+      const resp = await apiFetch('{{ url_for("digest_api.send_now") }}', { method: 'POST' });
+      const data = await resp.json();
+      if (resp.ok && data.generated) {
+        window.location.href = data.redirect_url;
+      } else {
+        btn.disabled = false; btn.textContent = 'Send Now';
+        alert(data.error || 'Could not generate the digest.');
+      }
+    } catch (err) {
+      btn.disabled = false; btn.textContent = 'Send Now';
+      alert('Could not generate the digest — please try again.');
+    }
+  });
+</script>
+{% endblock %}

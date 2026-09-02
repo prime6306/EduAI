@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Question Paper History · EduAI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Question Paper History</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ papers|length }} paper{{ 's' if papers|length != 1 }} generated</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('question_paper.index') }}">New Paper</a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Marks</th><th>Sets</th><th>Generated</th><th></th></tr></thead>
+      <tbody>
+        {% for p in papers %}
+        <tr>
+          <td>{{ p.subject }}</td>
+          <td>{{ p.total_marks }}</td>
+          <td>{{ p.sets|length }}</td>
+          <td>{{ p.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if p.created_at else '—' }}</td>
+          <td><a class="btn-ghost text-sm" href="{{ url_for('question_paper.result', paper_id=p._id) }}">View</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="table-empty">No papers generated yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CO-PO Attainment Report</title>
+<style>
+  @page { size: A4; margin: 1.8cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; color: #111827; font-size: 9.5pt; line-height: 1.4; }
+  h1 { font-size: 16pt; margin: 0 0 4px; text-align: center; }
+  h2 { font-size: 11pt; margin: 20px 0 8px; }
+  .meta { color: #6B7280; font-size: 9pt; margin-bottom: 16px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  th { background: #F3F4F6; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.04em; color: #6B7280; padding: 6px 8px; border: 1px solid #E5E7EB; text-align: left; }
+  td { border: 1px solid #E5E7EB; padding: 6px 8px; font-size: 8.5pt; }
+  .status-met     { color: #16A34A; font-weight: 700; }
+  .status-below   { color: #D97706; font-weight: 700; }
+  .status-nodata  { color: #9CA3AF; }
+  .po-red td      { background: #FEF2F2; }
+  .gap-item { padding: 8px 10px; background: #FFFBEB; border-left: 3px solid #D97706; margin-bottom: 6px; font-size: 8.5pt; }
+  .gap-item.po { background: #FEF2F2; border-left-color: #DC2626; }
+  .signature-block { margin-top: 50px; display: flex; justify-content: space-between; }
+  .signature-line { border-top: 1px solid #111827; width: 200px; padding-top: 4px; font-size: 8.5pt; text-align: center; }
+</style>
+</head>
+<body>
+  <h1>CO-PO Attainment Report</h1>
+  <div class="meta">
+    {{ setup.subject }} &middot; {{ setup.semester }} &middot; {{ setup.academic_year }}<br>
+    Generated {{ result.calculated_at.strftime('%b %d, %Y').replace(' 0', ' ') }}
+  </div>
+
+  <h2>Table 1 — CO Attainment</h2>
+  <table>
+    <thead><tr><th>CO</th><th>Description</th><th>Target</th><th>Attained</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for co in result.co_attainment %}
+      <tr>
+        <td>{{ co.co_id }}</td>
+        <td>{{ co.description }}</td>
+        <td>{{ co.target }}</td>
+        <td>{{ co.attainment if co.attainment is not none else '—' }}</td>
+        <td class="{{ 'status-met' if co.met else ('status-below' if co.attainment is not none else 'status-nodata') }}">
+          {{ 'Met' if co.met else ('Below Target' if co.attainment is not none else 'No Data') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Table 2 — CO-PO Mapping Matrix</h2>
+  <table>
+    <thead><tr><th>CO</th>{% for po in result.po_attainment %}<th>{{ po.po_id }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for co in setup.course_outcomes %}
+      <tr>
+        <td>{{ co.id }}</td>
+        {% for po in result.po_attainment %}<td>{{ setup.po_mapping.get(co.id, {}).get(po.po_id, '–') }}</td>{% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Table 3 — PO Attainment</h2>
+  <table>
+    <thead><tr><th>PO</th><th>Name</th><th>Attainment (0–3)</th></tr></thead>
+    <tbody>
+      {% for po in result.po_attainment %}
+      <tr class="{{ 'po-red' if po.level == 'red' }}">
+        <td>{{ po.po_id }}</td><td>{{ po.po_name }}</td><td>{{ po.attainment if po.attainment is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Gap Analysis</h2>
+  {% if result.gap_analysis %}
+    {% for g in result.gap_analysis %}
+    <div class="gap-item {{ 'po' if g.type == 'PO' }}">
+      <strong>{{ g.type }} {{ g.id }}</strong> — {{ g.recommendation }}
+    </div>
+    {% endfor %}
+  {% else %}
+  <p>No gaps — every CO and PO with data is meeting its target.</p>
+  {% endif %}
+
+  <div class="signature-block">
+    <div class="signature-line">Faculty Signature</div>
+    <div class="signature-line">HOD Signature</div>
+  </div>
+</body>
+</html>

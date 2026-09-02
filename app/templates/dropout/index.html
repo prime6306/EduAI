@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Dropout Risk Predictor · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/dropout.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Dropout Risk Predictor</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Random Forest + Logistic Regression early-warning system.</p>
+  </div>
+</div>
+
+{% if current_user.is_teacher %}
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="predict">Predict</button>
+  <button class="tab-btn" data-tab="batch">Batch Upload</button>
+</div>
+{% endif %}
+
+<div class="tab-panel active" id="tab-predict">
+  <div class="grid-2-1">
+    <div class="card">
+      <div class="card-header"><h3>Student Profile</h3></div>
+      <div class="card-body">
+        <form id="predictForm">
+          {% for f in feature_spec %}
+          <div class="form-group">
+            <label class="form-label">{{ f.label }}</label>
+            {% if f.type == 'slider' %}
+            <div class="slider-row">
+              <input type="range" id="f_{{ f.name }}" name="{{ f.name }}" min="{{ f.min }}" max="{{ f.max }}" value="{{ f.default }}" step="1">
+              <span class="slider-value" id="v_{{ f.name }}">{{ f.default }}</span>
+            </div>
+            {% else %}
+            <select class="form-control" id="f_{{ f.name }}" name="{{ f.name }}">
+              {% for value, label in f.options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          <div class="form-group">
+            <label class="form-label">Model</label>
+            <select class="form-control" id="modelChoice">
+              <option value="rf">Random Forest (primary)</option>
+              <option value="lr">Logistic Regression (comparison)</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn-primary btn-block" id="predictBtn">Predict Risk</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <div class="card-header"><h3>Result</h3></div>
+      <div class="card-body">
+        <div class="gauge-wrap">
+          <div class="gauge-container"><canvas id="gaugeChart"></canvas>
+            <div class="gauge-value"><div class="pct" id="gaugePct">0%</div><div class="lbl">dropout probability</div></div>
+          </div>
+          <span class="badge risk-badge-lg" id="riskBadge">—</span>
+        </div>
+
+        <div id="factorsSection" style="margin-top:20px; display:none;">
+          <div class="text-sm" style="font-weight:600; color:var(--text-primary); margin-bottom:6px;">Top Contributing Factors</div>
+          <div id="factorChips"></div>
+        </div>
+
+        <div style="margin-top:20px;">
+          <div class="text-sm" style="font-weight:600; color:var(--text-primary); margin-bottom:8px;">Recommendations</div>
+          <div class="recommendation-list" id="recommendationList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="emptyResultCard">
+      <div class="card-body" style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+        <svg class="icon" style="width:36px;height:36px; color:var(--text-disabled); margin:0 auto 12px;" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#triangle-alert"></use></svg>
+        <p class="text-sm">Fill in the form and click Predict to see a result.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if current_user.is_teacher %}
+<div class="tab-panel" id="tab-batch">
+  <div class="card">
+    <div class="card-header"><h3>Batch CSV Prediction</h3></div>
+    <div class="card-body">
+      <p class="text-sm" style="color:var(--text-muted); margin-bottom:14px;">
+        CSV must include columns: {{ feature_spec|map(attribute='name')|join(', ') }} (plus optional <code>student_id</code>).
+      </p>
+      <div class="dropzone" id="batchDropzone">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#upload"></use></svg>
+        <div class="text-sm" style="color:var(--text-secondary); font-weight:500;">Click to upload a CSV</div>
+      </div>
+      <input type="file" id="batchFileInput" accept=".csv" style="display:none;">
+      <div id="batchFileName" class="text-sm" style="margin-top:8px; color:var(--text-secondary);"></div>
+      <button class="btn-primary" id="batchSubmitBtn" style="margin-top:14px;" disabled>Run Batch Prediction</button>
+    </div>
+  </div>
+
+  <div class="card" id="batchResultCard" style="display:none; margin-top:20px;">
+    <div class="card-header">
+      <h3>Batch Results</h3>
+      <button class="btn-secondary btn-sm" id="downloadBatchCsvBtn">Download CSV</button>
+    </div>
+    <div class="card-body">
+      <div class="chart-container chart-sm"><canvas id="batchPieChart"></canvas></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Probability</th><th>Risk</th></tr></thead>
+        <tbody id="batchResultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dropout.js') }}"></script>
+{% endblock %}

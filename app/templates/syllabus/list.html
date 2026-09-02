@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Syllabus Tracker · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/syllabus.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Syllabus Progress Tracker</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Track unit and topic coverage against the semester plan.</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('syllabus.create') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+    New Syllabus
+  </a>
+</div>
+
+{% if items %}
+<div class="grid-1-1">
+  {% for item in items %}
+  <a class="card clickable" href="{{ url_for('syllabus.detail', syllabus_id=item.doc._id) }}" style="text-decoration:none; display:block;">
+    <div class="card-body">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+        <div>
+          <h3 class="text-h3">{{ item.doc.subject }}</h3>
+          <p class="text-xs" style="color:var(--text-muted);">{{ item.doc.branch }} · Year {{ item.doc.year }} · Exam {{ item.doc.exam_date.strftime('%b %d, %Y').replace(' 0', ' ') if item.doc.exam_date else '—' }}</p>
+        </div>
+        {% if item.progress.pace_behind %}<span class="badge badge-danger">Behind</span>{% else %}<span class="badge badge-success">On Track</span>{% endif %}
+      </div>
+      <div class="progress-track" style="margin-bottom:6px;">
+        <div class="progress-fill {{ 'danger' if item.progress.pace_behind else 'success' }}" style="width:{{ item.progress.overall_pct }}%;"></div>
+      </div>
+      <div class="text-xs" style="color:var(--text-muted);">{{ item.progress.covered_topics }}/{{ item.progress.total_topics }} topics · {{ item.progress.overall_pct }}%</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="card-body" style="text-align:center; padding:48px; color:var(--text-muted);">No syllabuses yet. Create one to start tracking progress.</div></div>
+{% endif %}
+{% endblock %}

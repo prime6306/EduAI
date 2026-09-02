@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}EduAI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/charts.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% macro nav_item(endpoint, icon, label, badge=None) %}
+    <a class="nav-item {{ 'active' if request.endpoint == endpoint else '' }}" href="{{ url_for(endpoint) }}">
+      <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#{{ icon }}"></use></svg>
+      <span class="label">{{ label }}</span>
+      {% if badge %}<span class="badge">{{ badge }}</span>{% endif %}
+    </a>
+  {% endmacro %}
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="sidebar-logo" href="{{ url_for('dashboard.home') }}">
+        <svg class="icon mark" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#graduation-cap"></use></svg>
+        <span class="name">EduAI</span>
+      </a>
+
+      {% if current_user.is_authenticated %}
+        {% if current_user.is_student %}
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">Learning</div>
+            {{ nav_item('dashboard.home', 'layout-dashboard', 'Dashboard') }}
+            {{ nav_item('nlp.doubt_solver', 'message-circle', 'Doubt Solver') }}
+            {{ nav_item('nlp.study_material', 'book-open', 'Study Material') }}
+            {{ nav_item('nlp.quiz', 'file-question', 'Quiz') }}
+            {{ nav_item('rag.index', 'file-text', 'RAG Q&A') }}
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">Support</div>
+            {{ nav_item('attendance.index', 'camera', 'Attendance') }}
+            {{ nav_item('dropout.index', 'triangle-alert', 'Dropout Risk') }}
+            {{ nav_item('wellness.index', 'heart', 'Wellness') }}
+            {{ nav_item('nlp.planner', 'calendar', 'Study Planner') }}
+            {{ nav_item('interview.index', 'briefcase', 'Interview Prep') }}
+            <a class="nav-item {{ 'active' if request.endpoint == 'announcements.index' else '' }}" href="{{ url_for('announcements.index') }}">
+              <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#megaphone"></use></svg>
+              <span class="label">Announcements</span>
+              <span class="badge" id="announcementUnreadBadge" style="display:none;"></span>
+            </a>
+          </div>
+        {% else %}
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">Class</div>
+            {{ nav_item('dashboard.home', 'layout-dashboard', 'Dashboard') }}
+            {{ nav_item('attendance.index', 'camera', 'Attendance') }}
+            {{ nav_item('students.list_students', 'users', 'Students') }}
+            {{ nav_item('announcements.index', 'megaphone', 'Announcements') }}
+            {{ nav_item('interview.index', 'briefcase', 'Interview Prep') }}
+          </div>
+          <div class="sidebar-section">
+            <div class="sidebar-section-label">Tools</div>
+            {{ nav_item('question_paper.index', 'file-text', 'Question Paper') }}
+            {{ nav_item('tests.index', 'clipboard-list', 'Tests') }}
+            {{ nav_item('plagiarism.index', 'copy', 'Plagiarism') }}
+            {{ nav_item('report_cards.index', 'file-chart', 'Report Cards') }}
+            {{ nav_item('syllabus.index', 'list-checks', 'Syllabus') }}
+            {{ nav_item('co_po.index', 'target', 'CO-PO') }}
+            {{ nav_item('analytics.index', 'bar-chart-3', 'Analytics') }}
+            {{ nav_item('digest.index', 'mail', 'Digest') }}
+            {{ nav_item('admin.audit_log', 'clipboard-list', 'Audit Log') }}
+          </div>
+        {% endif %}
+
+        <div class="sidebar-user">
+          <div class="avatar">{{ current_user.initials }}</div>
+          <div class="meta">
+            <div class="u-name">{{ current_user.name }}</div>
+            <div class="u-role">{{ current_user.role }}</div>
+          </div>
+          <a class="logout-link" href="{{ url_for('auth.logout') }}" title="Log out">
+            <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#log-out"></use></svg>
+          </a>
+        </div>
+      {% endif %}
+    </aside>
+
+    <div class="main-area">
+      {% if current_user.is_authenticated %}
+      <header class="topbar">
+        <button class="menu-toggle" aria-label="Toggle menu">
+          <svg class="icon icon-20" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#menu"></use></svg>
+        </button>
+        <div class="topbar-breadcrumb">
+          {% block breadcrumb %}<span class="current">{{ self.title() }}</span>{% endblock %}
+        </div>
+        <div class="topbar-right">
+          <a class="btn-icon" href="https://github.com" target="_blank" rel="noopener" title="Help">
+            <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#help-circle"></use></svg>
+          </a>
+          <div class="user-menu">
+            <button class="user-menu-trigger">
+              <span class="avatar">{{ current_user.initials }}</span>
+              <span class="u-name">{{ current_user.name.split(' ')[0] }}</span>
+              <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#chevron-down"></use></svg>
+            </button>
+            <div class="user-menu-dropdown">
+              <a href="{{ url_for('auth.profile') }}">
+                <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#user"></use></svg>
+                Profile
+              </a>
+              <a href="{{ url_for('auth.logout') }}">
+                <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#log-out"></use></svg>
+                Logout
+              </a>
+            </div>
+          </div>
+        </div>
+      </header>
+      {% endif %}
+
+      <main class="content-area {% block content_area_class %}{% endblock %}">
+        <div class="content-inner {% block content_inner_class %}{% endblock %}">
+          <div id="flash-area">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  {% set cat = category if category in ['success','warning','danger','info'] else 'info' %}
+                  <div class="alert alert-{{ cat }}" data-flash>
+                    <svg class="icon alert-icon" aria-hidden="true">
+                      <use href="{{ url_for('static', filename='icons/lucide.svg') }}#{{ 'check-circle-2' if cat == 'success' else 'alert-triangle' if cat in ['warning','danger'] else 'info' }}"></use>
+                    </svg>
+                    <div class="alert-body">{{ message }}</div>
+                    <button class="alert-dismiss" aria-label="Dismiss">
+                      <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#x"></use></svg>
+                    </button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+          </div>
+
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% if current_user.is_authenticated and current_user.is_student %}
+  <script src="{{ url_for('static', filename='js/announcements-badge.js') }}"></script>
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

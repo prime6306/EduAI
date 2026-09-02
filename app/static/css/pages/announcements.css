@@ -1,0 +1,59 @@
+/* ==========================================================================
+   announcements.css — category filter tabs, cards, rich text editor, badges
+   ========================================================================== */
+
+.category-filter-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.category-filter-tabs button {
+  padding: 6px 14px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); background: var(--bg-surface);
+  font-size: 0.8125rem; color: var(--text-secondary); cursor: pointer;
+}
+.category-filter-tabs button.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.announcement-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+.announcement-card:hover { box-shadow: var(--shadow-sm); }
+.announcement-card.unread { border-left: 3px solid var(--accent); }
+.announcement-card .a-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.announcement-card .a-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+.announcement-card .a-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.announcement-card .a-body { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-secondary); font-size: 0.875rem; line-height: 1.6; }
+.announcement-card.expanded .a-body { display: block; }
+
+.cat-Exam { background: var(--info-bg); color: var(--info); border-color: var(--info-border); }
+.cat-Assignment { background: var(--accent-light); color: var(--accent); border-color: var(--accent-border); }
+.cat-Holiday { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+.cat-General { background: var(--bg-surface-2); color: var(--text-muted); border-color: var(--border); }
+.cat-Urgent { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+
+.rich-toolbar { display: flex; gap: 4px; padding: 6px; border: 1px solid var(--border-strong); border-bottom: none; border-radius: var(--radius-md) var(--radius-md) 0 0; background: var(--bg-surface-2); }
+.rich-toolbar button {
+  width: 28px; height: 28px; border: none; background: none; border-radius: var(--radius-sm);
+  color: var(--text-secondary); cursor: pointer; font-weight: 700; font-size: 0.8125rem;
+}
+.rich-toolbar button:hover { background: var(--bg-surface-3); }
+.rich-editor {
+  min-height: 140px; padding: 12px 14px;
+  border: 1px solid var(--border-strong); border-radius: 0 0 var(--radius-md) var(--radius-md);
+  font-size: 0.9375rem; color: var(--text-primary); outline: none;
+}
+.rich-editor:focus { border-color: var(--accent); }
+
+.urgent-banner {
+  background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.urgent-banner .u-text { color: var(--danger); font-size: 0.875rem; font-weight: 500; }
+
+.nav-badge-count {
+  font-size: 0.6875rem; font-weight: 700; background: var(--danger); color: white;
+  padding: 1px 6px; border-radius: var(--radius-pill); margin-left: auto;
+}

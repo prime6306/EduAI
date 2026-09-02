@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Wellness Companion · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/wellness.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Wellness Companion</h1>
+    <p class="text-sm" style="color:var(--text-muted);">A private space to check in with yourself.</p>
+  </div>
+</div>
+
+<div class="grid-2-1">
+  <div>
+    {% if latest %}
+    <div class="severity-hero {{ 'success' if latest.severity == 'Minimal' else ('warning' if latest.severity in ['Mild','Moderate'] else 'danger') }}">
+      <div class="level">{{ latest.severity }}</div>
+      <p class="msg">
+        {% if latest.severity == 'Minimal' %}Things seem to be feeling okay for you right now.
+        {% elif latest.severity == 'Mild' %}Sounds like you're facing some real challenges lately.
+        {% elif latest.severity == 'Moderate' %}It sounds like you're going through a genuinely tough stretch.
+        {% else %}Please reach out to a mental health professional or a helpline soon.{% endif %}
+      </p>
+      <p class="text-xs" style="color:var(--text-muted); margin-top:10px;">Last checked in {{ latest.timestamp.strftime('%b') }} {{ latest.timestamp.day }}, {{ latest.timestamp.strftime('%Y') if latest.timestamp else '' }}</p>    </div>
+    {% else %}
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-body" style="text-align:center; padding:40px 20px;">
+        <svg class="icon" style="width:36px;height:36px;color:var(--text-disabled); margin:0 auto 12px;" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#heart"></use></svg>
+        <p class="text-sm" style="color:var(--text-muted);">You haven't checked in yet. It only takes a couple of minutes.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="tile-row">
+      <a class="tile" href="{{ url_for('wellness.assess_view') }}">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clipboard-list"></use></svg>
+        <span class="tile-label">{{ 'Retake Check-in' if latest else 'Start Check-in' }}</span>
+      </a>
+      <a class="tile" href="{{ url_for('wellness.chat_page') }}">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#message-circle"></use></svg>
+        <span class="tile-label">Talk to Companion</span>
+      </a>
+      <a class="tile" href="{{ url_for('wellness.sessions') }}">
+        <svg class="icon" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clock"></use></svg>
+        <span class="tile-label">Past Sessions</span>
+      </a>
+    </div>
+
+    <p class="text-xs" style="color:var(--text-muted); margin-top:24px;">
+      This is a supportive tool, not a diagnosis. Everything you share here is private to you.
+    </p>
+  </div>
+
+  <div>
+    {% include "partials/helplines.html" %}
+  </div>
+</div>
+{% endblock %}

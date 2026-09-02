@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - ../.env
+    volumes:
+      - ../models:/app/models
+      - ../uploads:/app/uploads
+      - ../chromadb_data:/app/chromadb_data
+    depends_on:
+      - mlflow
+    restart: unless-stopped
+
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /mlflow
+    command: >
+      bash -c "pip install --no-cache-dir mlflow==2.15.1 &&
+               mlflow server --host 0.0.0.0 --port 5001
+               --backend-store-uri sqlite:///mlflow.db
+               --default-artifact-root /mlflow/artifacts"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ../mlflow_data:/mlflow
+    restart: unless-stopped
+
+# Note: MongoDB is expected to be Atlas (cloud) per the project spec — no
+# local Mongo service is defined here. Point MONGODB_URI in .env at your
+# Atlas cluster. If you'd rather run Mongo locally, add a standard
+# `mongo:7` service here and point MONGODB_URI at it instead.

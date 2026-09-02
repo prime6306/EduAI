@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>Mock Interview · EduAI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/interview.css') }}">
+</head>
+<body class="interview-page">
+  <div class="interview-topbar">
+    <a class="exit-link" href="{{ url_for('interview.index') }}">
+      <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#x"></use></svg>
+      Exit
+    </a>
+    <div class="level-pill" id="levelPill">Preparing…</div>
+    <div class="q-progress" id="qProgress"></div>
+  </div>
+
+  <div class="interview-stage-body">
+    <div class="interview-stage-inner">
+      <div class="interviewer-row">
+        <div class="interviewer-avatar" id="interviewerAvatar">··</div>
+        <div class="interviewer-name" id="interviewerName">Connecting…</div>
+        <div class="interviewer-title" id="interviewerTitle"></div>
+      </div>
+
+      <div class="question-text" id="questionText">Getting your first question ready…</div>
+
+      <div class="mic-ring" id="micRing" title="Click to answer by voice">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </div>
+      <div class="voice-status" id="voiceStatus">Click the mic and speak, or type your answer below.</div>
+
+      <div class="transcript-box" id="transcriptBox" contenteditable="true"></div>
+
+      <div class="answer-actions">
+        <button class="btn-secondary" id="replayBtn" type="button">🔊 Replay Question</button>
+        <button class="btn-primary" id="submitBtn" type="button">Submit Answer →</button>
+      </div>
+
+      <div class="progress-dots" id="progressDots"></div>
+
+      <div class="turn-log" id="turnLog"></div>
+    </div>
+  </div>
+
+  <script>
+    window.__INTERVIEW__ = {
+      sessionId: {{ session._id | string | tojson }},
+      startUrl: {{ url_for('interview_api.api_start', sid=session._id) | tojson }},
+      answerUrl: {{ url_for('interview_api.api_answer', sid=session._id) | tojson }},
+      reportUrl: {{ url_for('interview.report_view', sid=session._id) | tojson }},
+      resumeTurn: {{ resume_turn | tojson if resume_turn else 'null' }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/interview-voice.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/interview-take.js') }}"></script>
+</body>
+</html>

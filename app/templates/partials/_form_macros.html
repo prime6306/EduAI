@@ -1,0 +1,18 @@
+{% macro render_field(field, hint=None) %}
+  <div class="form-group">
+    <label class="form-label" for="{{ field.id }}">
+      {{ field.label.text }}
+      {% if field.flags.required %}<span class="required">*</span>{% endif %}
+    </label>
+    {{ field(class_="form-control error" if field.errors else "form-control") }}
+    {% if hint and not field.errors %}<span class="form-hint">{{ hint }}</span>{% endif %}
+    {% for error in field.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro render_checkbox(field) %}
+  <div class="checkbox-row">
+    {{ field() }}
+    <label for="{{ field.id }}">{{ field.label.text }}</label>
+  </div>
+{% endmacro %}

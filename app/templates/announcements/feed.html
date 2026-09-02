@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Announcements · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/announcements.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Announcements</h1>
+    <p class="text-sm" style="color:var(--text-muted);">From your teachers, newest first.</p>
+  </div>
+</div>
+
+<div class="category-filter-tabs">
+  {% for c in ['All'] + categories %}
+  <a href="{{ url_for('announcements.index', category=c) }}"><button class="{{ 'active' if c == category }}">{{ c }}</button></a>
+  {% endfor %}
+</div>
+
+<div id="feedList">
+  {% for a in items %}
+  <div class="announcement-card {{ 'unread' if not a.is_read }}" id="ann-card-{{ a._id }}" data-id="{{ a._id }}">
+    <div class="a-top">
+      <span class="badge cat-{{ a.category }}">{{ a.category }}</span>
+      {% if a.edited %}<span class="badge badge-neutral">Updated</span>{% endif %}
+      <span class="a-title">{{ a.title }}</span>
+    </div>
+    <div class="a-meta">{{ a.created_at.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if a.created_at else '' }}</div>
+    <div class="a-body">
+      {{ a.body_html | safe }}
+      {% if a.attachment_filename %}
+      <div style="margin-top:10px;">
+        <a class="btn-secondary btn-sm" href="{{ url_for('announcements.attachment', filename=a.attachment_filename) }}" target="_blank">
+          <svg class="icon icon-14" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#download"></use></svg>
+          Download Attachment
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="card"><div class="card-body" style="text-align:center; padding:40px; color:var(--text-muted);">No announcements yet.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.announcement-card').forEach(function (card) {
+    card.addEventListener('click', async function () {
+      const wasExpanded = card.classList.contains('expanded');
+      document.querySelectorAll('.announcement-card').forEach(c => c.classList.remove('expanded'));
+      if (!wasExpanded) {
+        card.classList.add('expanded');
+        if (card.classList.contains('unread')) {
+          const id = card.getAttribute('data-id');
+          await apiFetch(`/api/announcements/read/${id}`, { method: 'POST' });
+          card.classList.remove('unread');
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

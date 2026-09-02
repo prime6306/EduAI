@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Generate Study Material · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Generate Study Material</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Get structured notes, videos, and articles for any topic.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Topic Details</h3></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('nlp.study_material') }}" id="studyForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="topic">Topic <span class="required">*</span></label>
+          <input class="form-control" id="topic" name="topic" type="text" placeholder="e.g. Fourier Transform" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subject">Subject <span class="required">*</span></label>
+          <input class="form-control" id="subject" name="subject" type="text" placeholder="e.g. Signals &amp; Systems" required>
+        </div>
+      </div>
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="branch">Branch</label>
+          <select class="form-control" id="branch" name="branch">
+            {% for value, label in branches %}
+            <option value="{{ value }}" {{ 'selected' if value == current_user.branch }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="year">Year</label>
+          <select class="form-control" id="year" name="year">
+            {% for value, label in years %}
+            <option value="{{ value }}" {{ 'selected' if value == current_user.year }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary btn-block btn-lg" id="generateBtn">Generate Material</button>
+      {% include "partials/_usage_meter.html" %}
+      <p class="text-xs" style="color:var(--text-muted); text-align:center; margin-top:8px;">Estimated time: ~45 seconds</p>
+    </form>
+  </div>
+</div>
+
+{% if recent_notes %}
+<div class="section">
+  <div class="card">
+    <div class="card-header">
+      <h3>My Saved Notes</h3>
+      <a class="btn-ghost text-sm" href="{{ url_for('nlp.study_material_notes') }}">View all</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Topic</th><th>Subject</th><th>Generated</th><th></th></tr></thead>
+        <tbody>
+          {% for n in recent_notes %}
+          <tr>
+            <td>{{ n.topic }}</td>
+            <td>{{ n.subject }}</td>
+            <td>{{ n.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if n.created_at else '—' }}</td>
+            <td><a class="btn-ghost text-sm" href="{{ url_for('nlp.study_material_result', pipeline_id=n._id) }}">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="loadingOverlay">
+  <div class="modal" style="width:340px;">
+    <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+      <div class="spinner" style="width:32px;height:32px;border-color:var(--border-strong);border-top-color:var(--accent);margin:0 auto 16px;"></div>
+      <h3 class="text-h3" style="margin-bottom:6px;">Generating your study material…</h3>
+      <p class="text-sm" style="color:var(--text-muted);">This takes about 45 seconds — writing explanations, finding videos, and summarising.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('studyForm').addEventListener('submit', function () {
+    document.getElementById('generateBtn').classList.add('loading');
+    document.getElementById('loadingOverlay').classList.add('open');
+  });
+</script>
+{% endblock %}

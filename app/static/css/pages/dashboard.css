@@ -1,0 +1,32 @@
+/* ==========================================================================
+   dashboard.css — metric row, quick action tiles, dashboard-only tweaks
+   ========================================================================== */
+
+.dashboard-greeting-date { color: var(--text-muted); font-size: 0.875rem; margin-top: 4px; }
+
+.risk-gauge-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 8px 0 4px;
+}
+.risk-gauge-value { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); }
+
+.pending-actions-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.pending-action-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-2);
+}
+.pending-action-chip .count { font-weight: 700; color: var(--text-primary); }
+
+.announcement-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.announcement-row:last-child { border-bottom: none; }
+.announcement-title { font-size: 0.875rem; font-weight: 500; color: var(--text-primary); }
+.announcement-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }

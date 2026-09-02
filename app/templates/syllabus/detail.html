@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.subject }} · Syllabus · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/syllabus.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ doc.subject }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ doc.branch }} · Year {{ doc.year }} · Exam {{ doc.exam_date.strftime('%b %d, %Y').replace(' 0', ' ') if doc.exam_date else '—' }}</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('syllabus.export', syllabus_id=doc._id) }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#download"></use></svg>
+    NAAC Export
+  </a>
+</div>
+
+<div class="pace-banner {{ 'behind' if progress.pace_behind else 'ok' }}">
+  <svg class="icon icon-18" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#{{ 'alert-triangle' if progress.pace_behind else 'check-circle-2' }}"></use></svg>
+  <span>{{ progress.pace_status }}</span>
+  {% if progress.exam_overshoot_days %}
+  <span style="margin-left:auto; font-weight:700;">Projected to finish {{ progress.exam_overshoot_days }} day{{ 's' if progress.exam_overshoot_days != 1 }} after the exam date</span>
+  {% endif %}
+</div>
+
+<div class="grid-metrics section">
+  <div class="metric-card">
+    <div class="metric-label">Overall Progress</div>
+    <div class="metric-value">{{ progress.overall_pct }}%</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Topics Covered</div>
+    <div class="metric-value">{{ progress.covered_topics }}/{{ progress.total_topics }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Lectures Used</div>
+    <div class="metric-value">{{ progress.lectures_used }}/{{ doc.total_lectures }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Projected Finish</div>
+    <div class="metric-value" style="font-size:1.125rem; margin-top:14px;">{{ progress.projected_finish_date.strftime('%b %d').replace(' 0', ' ') if progress.projected_finish_date else 'TBD' }}</div>
+  </div>
+</div>
+
+<div class="grid-2-1 section">
+  <div>
+    <div class="section-label">Units</div>
+    {% for unit in doc.units %}
+    {% set unit_idx = loop.index0 %}
+    {% set up = progress.per_unit[unit_idx] %}
+    <div class="unit-card {{ 'zero-coverage-alert' if up.covered == 0 }}">
+      <div class="unit-card-header">
+        <h4>Unit {{ unit.number }}: {{ unit.title }}</h4>
+        <span class="unit-progress-label">{{ up.covered }}/{{ up.total }} ({{ up.pct }}%)</span>
+      </div>
+      <div class="progress-track" style="margin-bottom:12px;">
+        <div class="progress-fill {{ 'success' if up.pct == 100 else 'warning' if up.pct > 0 else 'danger' }}" style="width:{{ up.pct }}%;"></div>
+      </div>
+      <div class="topic-checklist">
+        {% for topic in unit.topics %}
+        <label class="topic-check-row {{ 'covered' if topic.covered }}">
+          <input type="checkbox" data-unit-index="{{ unit_idx }}" data-topic-index="{{ loop.index0 }}" {{ 'checked' if topic.covered }}>
+          <span class="t-text">{{ topic.text }}</span>
+          {% if topic.covered_date %}<span class="t-date">{{ topic.covered_date.strftime('%b %d').replace(' 0', ' ') }}</span>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <div class="section-label">Uncovered Topics</div>
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-body" style="max-height:300px; overflow-y:auto;">
+        {% for u in progress.uncovered_topics %}
+        <div class="uncovered-list-item">
+          <div class="unit-tag">{{ u.unit }}</div>
+          {{ u.topic }}
+        </div>
+        {% else %}
+        <p class="text-sm" style="color:var(--text-muted);">All topics covered!</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section-label">Coverage Heatmap</div>
+    <div class="card">
+      <div class="card-body">
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const heatmapData = {{ progress.heatmap | tojson }};
+  const grid = document.getElementById('heatmapGrid');
+  const dates = Object.keys(heatmapData).sort();
+  dates.forEach(function (date) {
+    const count = heatmapData[date];
+    const cell = document.createElement('div');
+    let level = count >= 3 ? 3 : count >= 2 ? 2 : 1;
+    cell.className = `heatmap-cell level-${level}`;
+    cell.title = `${date}: ${count} topic(s)`;
+    grid.appendChild(cell);
+  });
+  if (!dates.length) {
+    grid.innerHTML = '<p class="text-sm" style="color:var(--text-muted); grid-column: 1/-1;">No coverage recorded yet.</p>';
+  }
+
+  document.querySelectorAll('.topic-check-row input[type="checkbox"]').forEach(function (checkbox) {
+    checkbox.addEventListener('click', async function (e) {
+      const row = checkbox.closest('.topic-check-row');
+      const unitIndex = checkbox.getAttribute('data-unit-index');
+      const topicIndex = checkbox.getAttribute('data-topic-index');
+
+      const resp = await apiFetch(`/api/syllabus/{{ doc._id }}/toggle`, {
+        method: 'POST',
+        body: JSON.stringify({ unit_index: parseInt(unitIndex), topic_index: parseInt(topicIndex) }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        row.classList.toggle('covered', data.topic.covered);
+      } else {
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+      }
+    });
+  });
+</script>
+{% endblock %}

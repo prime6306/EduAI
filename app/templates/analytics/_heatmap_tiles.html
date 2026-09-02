@@ -1,0 +1,12 @@
+{% if not heatmap.tiles %}
+<p class="text-sm" style="color:var(--text-muted);">No assessment data matches these filters yet.</p>
+{% else %}
+{% for t in heatmap.tiles %}
+<div class="heatmap-tile bucket-{{ t.bucket }}" data-subject="{{ t.subject }}" data-topic="{{ t.topic }}">
+  <div class="heatmap-tile-subject">{{ t.subject }}</div>
+  <div class="heatmap-tile-topic">{{ t.topic }}</div>
+  <div class="heatmap-tile-score">{{ t.average }}%</div>
+  <div class="heatmap-tile-meta">{{ t.attempts }} attempt{{ 's' if t.attempts != 1 else '' }}</div>
+</div>
+{% endfor %}
+{% endif %}

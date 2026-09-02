@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>EduAI Weekly Digest</title></head>
+<body style="margin:0; padding:0; background:#F8F9FA; font-family:Helvetica,Arial,sans-serif; color:#111827;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8F9FA; padding:24px 0;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#FFFFFF; border-radius:12px; overflow:hidden; border:1px solid #E5E7EB;">
+      <tr><td style="background:#111827; padding:20px 28px;">
+        <span style="color:#FFFFFF; font-size:17px; font-weight:700;">EduAI Weekly Digest</span>
+      </td></tr>
+      <tr><td style="padding:24px 28px 4px;">
+        <p style="font-size:13px; color:#6B7280; margin:0 0 16px;">
+          {{ digest.week_start.strftime('%b %d').replace(' 0', ' ') }} – {{ (digest.week_end - timedelta(days=1)).strftime('%b %d, %Y').replace(' 0', ' ') }}
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F9FF; border:1px solid #BAE6FD; border-radius:8px; margin-bottom:20px;">
+          <tr><td style="padding:14px 16px; font-size:14px; color:#0284C7;">{{ digest.summary_paragraph }}</td></tr>
+        </table>
+      </td></tr>
+
+      <tr><td style="padding:0 28px 20px;">
+        <h3 style="font-size:14px; margin:0 0 8px;">Attendance</h3>
+        <p style="font-size:13px; color:#374151; margin:0 0 16px;">
+          {{ digest.attendance.rate }}% this week ({{ '%+.1f' | format(digest.attendance.wow_change) }} pts vs last week) &middot;
+          {{ digest.attendance.sessions }} session(s) held
+          {% if digest.attendance.absent_students %}<br><strong>Missed &gt;50%:</strong> {{ digest.attendance.absent_students | join(', ') }}{% endif %}
+        </p>
+
+        <h3 style="font-size:14px; margin:0 0 8px;">Quiz Performance</h3>
+        <p style="font-size:13px; color:#374151; margin:0 0 16px;">
+          {{ digest.quiz.total_taken }} taken, avg {{ digest.quiz.avg_score }}% ({{ '%+.1f' | format(digest.quiz.wow_change) }} pts vs last week) &middot;
+          weakest topic: {{ digest.quiz.weakest_topic or '—' }}
+          {% if digest.quiz.inactive_students %}<br><strong>Inactive 7+ days:</strong> {{ digest.quiz.inactive_students | join(', ') }}{% endif %}
+        </p>
+
+        <h3 style="font-size:14px; margin:0 0 8px;">Dropout Risk</h3>
+        <p style="font-size:13px; color:#374151; margin:0 0 16px;">
+          {{ digest.dropout.high_count }} high-risk now
+          {% if digest.dropout.newly_high %} &middot; newly high: {{ digest.dropout.newly_high | join(', ') }}{% endif %}
+          {% if digest.dropout.improved %} &middot; improved: {{ digest.dropout.improved | join(', ') }}{% endif %}
+        </p>
+
+        <h3 style="font-size:14px; margin:0 0 8px;">Wellness <span style="font-weight:400; color:#6B7280;">(anonymised)</span></h3>
+        <p style="font-size:13px; color:#374151; margin:0 0 16px;">
+          {{ digest.wellness.sessions }} session(s) &middot; {{ digest.wellness.moderate_severe_count }} moderate/severe &middot;
+          crisis flag: {{ 'yes' if digest.wellness.crisis_detected else 'no' }}
+        </p>
+
+        <h3 style="font-size:14px; margin:0 0 8px;">Platform Activity</h3>
+        <p style="font-size:13px; color:#374151; margin:0;">
+          {{ digest.activity.doubt_questions }} doubt questions &middot; {{ digest.activity.pdfs_uploaded }} PDFs uploaded &middot;
+          {{ digest.activity.pipelines_generated }} study pipelines
+          {% if digest.activity.top_subject %} &middot; top subject: {{ digest.activity.top_subject }}{% endif %}
+        </p>
+      </td></tr>
+
+      <tr><td style="padding:16px 28px; background:#F3F4F6; border-top:1px solid #E5E7EB;">
+        <p style="font-size:11px; color:#9CA3AF; margin:0;">Sent automatically by EduAI. Manage this in your Weekly Digest settings.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>

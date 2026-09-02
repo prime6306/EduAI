@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Map to POs — {{ setup.subject }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/co-po.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ setup.subject }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Map each Course Outcome to Program Outcomes with strength 1 (weak) – 3 (strong).</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('co_po.index') }}">All Subjects</a>
+</div>
+
+{% with current_step=2, subject_id=setup._id %}{% include "co_po/_stepper.html" %}{% endwith %}
+
+<div class="card">
+  <div class="card-header">
+    <h3>CO–PO Mapping Grid</h3>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select class="form-control form-select" id="templateSelect" style="width:auto;">
+        <option value="">Apply Template...</option>
+        {% for t in templates %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+      </select>
+      <span class="text-xs" id="autosaveStatus" style="color:var(--text-muted); min-width:70px;"></span>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table co-po-grid-table">
+      <thead>
+        <tr>
+          <th>CO</th>
+          {% for po_id, po_name in po_list %}<th title="{{ po_name }}">{{ po_id }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for co in setup.course_outcomes %}
+        <tr>
+          <td class="co-po-grid-co-label" title="{{ co.description }}">{{ co.id }}</td>
+          {% for po_id, po_name in po_list %}
+          <td>
+            <select class="form-control form-select co-po-cell" data-co="{{ co.id }}" data-po="{{ po_id }}">
+              {% set current = setup.po_mapping.get(co.id, {}).get(po_id, 0) %}
+              <option value="0" {{ 'selected' if not current }}>–</option>
+              <option value="1" {{ 'selected' if current == 1 }}>1</option>
+              <option value="2" {{ 'selected' if current == 2 }}>2</option>
+              <option value="3" {{ 'selected' if current == 3 }}>3</option>
+            </select>
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="co-po-legend">
+  <span>PO1: {{ po_list[0][1] }}</span> &middot; <span>PO2: {{ po_list[1][1] }}</span> &middot; ... hover any PO column header for its full name.
+</div>
+
+<a class="btn-primary btn-lg" style="margin-top:20px; display:inline-block;" href="{{ url_for('co_po.assessment_map', subject_id=setup._id) }}">Continue to Assessment Mapping</a>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const statusEl = document.getElementById('autosaveStatus');
+
+  document.querySelectorAll('.co-po-cell').forEach((select) => {
+    select.addEventListener('change', async () => {
+      statusEl.textContent = 'Saving...';
+      try {
+        await apiFetch('{{ url_for("co_po_api.mapping_cell", subject_id=setup._id) }}', {
+          method: 'POST',
+          body: JSON.stringify({ co_id: select.dataset.co, po_id: select.dataset.po, strength: parseInt(select.value, 10) }),
+        });
+        statusEl.textContent = 'Saved ✓';
+        setTimeout(() => { statusEl.textContent = ''; }, 1500);
+      } catch (err) {
+        statusEl.textContent = 'Save failed';
+      }
+    });
+  });
+
+  document.getElementById('templateSelect').addEventListener('change', async function () {
+    const template = this.value;
+    if (!template) return;
+    if (!confirm(`Apply the "${template}" template? This will overwrite the current grid.`)) { this.value = ''; return; }
+    const resp = await apiFetch('{{ url_for("co_po_api.apply_template", subject_id=setup._id) }}', {
+      method: 'POST', body: JSON.stringify({ template }),
+    });
+    if (resp.ok) {
+      window.location.reload();
+    } else {
+      alert('Could not apply the template.');
+    }
+  });
+</script>
+{% endblock %}

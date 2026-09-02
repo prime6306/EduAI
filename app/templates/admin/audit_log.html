@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Audit Log · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/audit.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Audit Log</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Every significant action, permanently recorded. Records cannot be deleted.</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('admin.export_audit_log', **filters.to_dict()) }}">Export CSV</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('admin.audit_log') }}" class="audit-filter-row">
+      <div class="form-group" style="margin:0;">
+        <label class="form-label text-xs">Search</label>
+        <input class="form-control" type="text" name="q" value="{{ filters.get('q', '') }}" placeholder="Actor, action, role...">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label text-xs">Action Type</label>
+        <select class="form-control form-select" name="action">
+          <option value="">All Actions</option>
+          {% for a in actions %}<option value="{{ a }}" {{ 'selected' if filters.get('action') == a }}>{{ a }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label text-xs">Actor Name</label>
+        <input class="form-control" type="text" name="actor" value="{{ filters.get('actor', '') }}" placeholder="e.g. Priyanshu">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label text-xs">From</label>
+        <input class="form-control" type="date" name="date_from" value="{{ filters.get('date_from', '') }}">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label text-xs">To</label>
+        <input class="form-control" type="date" name="date_to" value="{{ filters.get('date_to', '') }}">
+      </div>
+      <button type="submit" class="btn-primary">Filter</button>
+      {% if filters %}<a class="btn-secondary" href="{{ url_for('admin.audit_log') }}">Clear</a>{% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px;">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Timestamp (UTC)</th><th>Actor</th><th>Role</th><th>Detail</th></tr></thead>
+      <tbody>
+        {% for e in result.entries %}
+        <tr>
+          <td class="text-mono text-xs" style="white-space:nowrap;">{{ e.timestamp.strftime('%Y-%m-%d %H:%M:%S') if e.timestamp else '—' }}</td>
+          <td>{{ e.actor_name or 'Unknown' }}</td>
+          <td><span class="badge badge-accent">{{ e.actor_role or '—' }}</span></td>
+          <td class="text-sm">{{ e.human_detail }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="table-empty">No audit log entries match these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if result.total_pages > 1 %}
+  <div class="card-footer audit-pagination">
+    <span class="text-xs" style="color:var(--text-muted);">{{ result.total }} total entries &middot; page {{ result.page }} of {{ result.total_pages }}</span>
+    <div style="display:flex; gap:6px;">
+      {% set base_args = filters.to_dict() if filters.to_dict is defined else dict(filters) %}
+      {% if result.page > 1 %}
+      <a class="btn-secondary btn-sm" href="{{ url_for('admin.audit_log', **dict(base_args, page=result.page - 1)) }}">Previous</a>
+      {% endif %}
+      {% if result.page < result.total_pages %}
+      <a class="btn-secondary btn-sm" href="{{ url_for('admin.audit_log', **dict(base_args, page=result.page + 1)) }}">Next</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

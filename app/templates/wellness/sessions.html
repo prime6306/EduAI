@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Past Sessions · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/wellness.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Past Sessions</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Your wellness chat history.</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('wellness.chat_page') }}">New Chat</a>
+</div>
+
+<div class="card">
+  {% for s in sessions %}
+  <div class="wellness-session-row">
+    <div>
+      <div class="text-sm" style="font-weight:500; color:var(--text-primary);">
+        {{ s.messages|length }} message{{ 's' if s.messages|length != 1 }}
+        {% if s.crisis_flagged %}<span class="badge badge-danger" style="margin-left:8px;">Flagged</span>{% endif %}
+      </div>
+      <div class="text-xs" style="color:var(--text-muted);">{{ s.updated_at.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if s.updated_at else '' }}</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="table-empty">No sessions yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}

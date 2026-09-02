@@ -1,0 +1,27 @@
+{% extends "auth/auth_shell.html" %}
+{% from "partials/_form_macros.html" import render_field %}
+{% block title %}Create Account · EduAI{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card" style="width: 440px;">
+  <h1 class="text-h1">Create your account</h1>
+  <p class="auth-subtitle">Join EduAI as a student or teacher</p>
+
+  <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+    {{ form.hidden_tag() }}
+    {{ render_field(form.name) }}
+    {{ render_field(form.email) }}
+    {{ render_field(form.password, hint="Minimum 6 characters.") }}
+    {{ render_field(form.confirm_password) }}
+    {{ render_field(form.role) }}
+    {{ render_field(form.branch) }}
+    {{ render_field(form.year) }}
+    {{ render_field(form.student_id, hint="Required for students — links your account to attendance.") }}
+    {{ form.submit(class_="btn-primary btn-block btn-lg") }}
+  </form>
+
+  <div class="auth-switch">
+    Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+  </div>
+</div>
+{% endblock %}

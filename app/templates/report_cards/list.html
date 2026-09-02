@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Report Cards · EduAI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Report Cards</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ batches|length }} batch{{ 'es' if batches|length != 1 }}</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('report_cards.upload') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+    New Batch
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Subject</th><th>Students</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for b in batches %}
+        <tr>
+          <td>{{ b.title }}</td>
+          <td>{{ b.subject }}</td>
+          <td>{{ b.student_records|length }}</td>
+          <td><span class="badge badge-{{ 'success' if b.status == 'generated' else 'neutral' }}">{{ b.status|capitalize }}</span></td>
+          <td>{{ b.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if b.created_at else '—' }}</td>
+          <td>
+            {% if b.status == 'generated' %}
+            <a class="btn-ghost text-sm" href="{{ url_for('report_cards.results', batch_id=b._id) }}">View</a>
+            {% else %}
+            <a class="btn-ghost text-sm" href="{{ url_for('report_cards.marks', batch_id=b._id) }}">Continue</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No report card batches yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Not Found · EduAI{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body" style="text-align:center; padding:80px 20px;">
+    <div class="text-display" style="color:var(--text-disabled); margin-bottom:8px;">404</div>
+    <h3 class="text-h3" style="margin-bottom:6px;">Page not found</h3>
+    <p class="text-sm" style="color:var(--text-muted); margin-bottom:20px;">The page you're looking for doesn't exist or has moved.</p>
+    <a class="btn-primary" href="{{ url_for('dashboard.home') if current_user.is_authenticated else url_for('auth.login') }}">Go back home</a>
+  </div>
+</div>
+{% endblock %}

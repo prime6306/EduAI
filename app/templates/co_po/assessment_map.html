@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Map Assessments — {{ setup.subject }} · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/co-po.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">{{ setup.subject }}</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Select which Course Outcome(s) each assessment measures. Everything gradeable in the system for this subject is listed automatically.</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('co_po.index') }}">All Subjects</a>
+</div>
+
+{% with current_step=3, subject_id=setup._id %}{% include "co_po/_stepper.html" %}{% endwith %}
+
+<form method="POST" action="{{ url_for('co_po.assessment_map', subject_id=setup._id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card">
+    <div class="card-header"><h3>Assessments Found for {{ setup.subject }}</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assessment</th><th>Type</th>
+            {% for co in setup.course_outcomes %}<th>{{ co.id }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in assessments %}
+          <tr>
+            <td>{{ a.label }}</td>
+            <td><span class="badge badge-neutral">{{ a.assessment_type }}</span></td>
+            {% for co in setup.course_outcomes %}
+            <td style="text-align:center;">
+              <input type="checkbox" name="co_ids__{{ a.assessment_id }}[]" value="{{ co.id }}" {{ 'checked' if co.id in a.selected_cos }}>
+            </td>
+            {% endfor %}
+          </tr>
+          {% else %}
+          <tr><td colspan="{{ 2 + setup.course_outcomes | length }}" class="table-empty">
+            No quizzes, tests, or grade components found yet for "{{ setup.subject }}". Create some using that exact subject name, then come back here.
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if assessments %}
+  <button type="submit" class="btn-primary btn-block btn-lg" style="margin-top:20px;">Save &amp; Calculate Attainment</button>
+  {% endif %}
+</form>
+{% endblock %}

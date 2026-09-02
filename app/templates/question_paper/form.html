@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Question Paper Generator · EduAI{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/question-paper.css') }}">{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Question Paper Generator</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Generate exam-ready papers from your syllabus units.</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn-secondary" href="{{ url_for('question_bank.browse') }}">Question Bank</a>
+    <a class="btn-secondary" href="{{ url_for('question_paper.history') }}">History</a>
+  </div>
+</div>
+
+<form method="POST" action="{{ url_for('question_paper.index') }}" id="qpForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header"><h3>Paper Details</h3></div>
+    <div class="card-body">
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Subject <span class="required">*</span></label>
+          <input class="form-control" type="text" name="subject" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <input class="form-control" type="text" name="duration" value="3 hours">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Units / Topics to Cover</label>
+        <div class="units-tag-input" id="unitsTagInput">
+          <input type="text" id="unitTagField" placeholder="Type a unit and press Enter...">
+        </div>
+      </div>
+
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label">Number of Sets</label>
+          <select class="form-control" name="num_sets">
+            <option value="1">1 (Set A only)</option>
+            <option value="2">2 (Set A + B)</option>
+            <option value="3">3 (Set A + B + C)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bloom's Taxonomy Levels (optional)</label>
+          <select class="form-control" name="bloom_levels[]" multiple size="4">
+            <option value="Remember">Remember</option>
+            <option value="Understand">Understand</option>
+            <option value="Apply">Apply</option>
+            <option value="Analyse">Analyse</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Difficulty Split (%)</label>
+        <div class="qp-section-marks-row">
+          <input class="form-control" type="number" name="difficulty_easy" value="40" min="0" max="100" placeholder="Easy %">
+          <input class="form-control" type="number" name="difficulty_medium" value="40" min="0" max="100" placeholder="Medium %">
+          <input class="form-control" type="number" name="difficulty_hard" value="20" min="0" max="100" placeholder="Hard %">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3>Question Sections</h3></div>
+    <div class="card-body">
+      {% for type_key, type_label, default_marks_per_q, default_section_marks in [
+        ('mcq', 'Multiple Choice', 1, 20), ('short', 'Short Answer', 5, 30), ('long', 'Long Answer', 15, 50)
+      ] %}
+      <div class="qp-type-toggle" id="toggle-{{ type_key }}">
+        <div class="qp-type-toggle-header">
+          <input type="checkbox" name="question_types[]" value="{{ type_key }}" checked data-toggle-type="{{ type_key }}">
+          {{ type_label }}
+        </div>
+        <div class="qp-type-fields">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label text-xs">Marks per Question</label>
+            <input class="form-control" type="number" name="marks_per_{{ type_key }}" value="{{ default_marks_per_q }}" min="1">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label text-xs">Section Total Marks</label>
+            <input class="form-control" type="number" name="section_marks_{{ type_key }}" value="{{ default_section_marks }}" min="0">
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Paper Total Marks (informational)</label>
+        <input class="form-control" type="number" name="total_marks" value="100" min="1">
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn-primary btn-block btn-lg" id="generateBtn" style="margin-top:20px;">Generate Question Paper</button>
+  {% include "partials/_usage_meter.html" %}
+</form>
+
+<div class="modal-overlay" id="loadingOverlay">
+  <div class="modal" style="width:340px;">
+    <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+      <div class="spinner" style="width:32px;height:32px;border-color:var(--border-strong);border-top-color:var(--accent);margin:0 auto 16px;"></div>
+      <h3 class="text-h3" style="margin-bottom:6px;">Generating your question paper…</h3>
+      <p class="text-sm" style="color:var(--text-muted);">Writing and validating questions across all sections.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const tagContainer = document.getElementById('unitsTagInput');
+  const tagField = document.getElementById('unitTagField');
+  function addUnitTag(value) {
+    if (!value.trim()) return;
+    const tag = document.createElement('span');
+    tag.className = 'unit-tag';
+    tag.innerHTML = `${value} <button type="button">&times;</button> <input type="hidden" name="units[]" value="${value}">`;
+    tag.querySelector('button').addEventListener('click', () => tag.remove());
+    tagContainer.insertBefore(tag, tagField);
+  }
+  tagField.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addUnitTag(tagField.value);
+      tagField.value = '';
+    }
+  });
+
+  document.querySelectorAll('[data-toggle-type]').forEach(function (checkbox) {
+    checkbox.addEventListener('change', function () {
+      document.getElementById(`toggle-${checkbox.getAttribute('data-toggle-type')}`).classList.toggle('disabled', !checkbox.checked);
+    });
+  });
+
+  document.getElementById('qpForm').addEventListener('submit', function () {
+    document.getElementById('generateBtn').classList.add('loading');
+    document.getElementById('loadingOverlay').classList.add('open');
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% if not heatmap.red_flags %}
+<p class="text-sm" style="color:var(--text-muted); padding:16px 20px;">No topics are currently below 50% class average.</p>
+{% else %}
+<table class="data-table">
+  <thead><tr><th>Subject</th><th>Topic</th><th>Average</th><th>Attempts</th><th></th></tr></thead>
+  <tbody>
+    {% for t in heatmap.red_flags %}
+    <tr>
+      <td>{{ t.subject }}</td>
+      <td>{{ t.topic }}</td>
+      <td><span class="badge badge-danger">{{ t.average }}%</span></td>
+      <td>{{ t.attempts }}</td>
+      <td><button class="btn-ghost text-sm" data-reteach data-subject="{{ t.subject }}" data-topic="{{ t.topic }}">Generate Re-teach Material</button></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

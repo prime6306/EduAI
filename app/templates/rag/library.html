@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Document Library · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Document Library</h1>
+    <p class="text-sm storage-indicator">{{ documents|length }} document{{ 's' if documents|length != 1 }} · {{ '%.1f'|format(total_bytes / 1024 / 1024) }} MB stored</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('rag.index') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#message-circle"></use></svg>
+    Ask a Question
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Filename</th><th>Chunks</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
+      <tbody>
+        {% for d in documents %}
+        <tr id="doc-row-{{ d.pdf_id }}">
+          <td>{{ d.filename }}</td>
+          <td>{{ d.chunk_count }}</td>
+          <td>{{ '%.2f'|format((d.file_size_bytes or 0) / 1024 / 1024) }} MB</td>
+          <td>{{ d.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if d.created_at else '—' }}</td>
+          <td>
+            <button class="btn-ghost text-sm" style="color:var(--danger);" data-delete-pdf="{{ d.pdf_id }}">Delete</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="table-empty">No documents uploaded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-delete-pdf]').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = btn.getAttribute('data-delete-pdf');
+      if (!confirm('Delete this document and all its indexed content?')) return;
+      const resp = await apiFetch(`/rag/api/rag/pdf/${id}`, { method: 'DELETE' });
+      if (resp.ok) {
+        const row = document.getElementById(`doc-row-${id}`);
+        if (row) row.remove();
+      }
+    });
+  });
+</script>
+{% endblock %}

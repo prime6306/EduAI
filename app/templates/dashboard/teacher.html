@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Good {{ 'morning' if now.hour < 12 else ('afternoon' if now.hour < 18 else 'evening') }}, {{ current_user.name.split(' ')[0] }}</h1>
+    <p class="dashboard-greeting-date">{{ now.strftime('%A, %B %d, %Y').replace(' 0', ' ') }}</p>
+  </div>
+</div>
+
+<div class="grid-metrics section">
+  <div class="metric-card">
+    <div class="metric-label">Total Students</div>
+    <div class="metric-value">{{ total_students }}</div>
+    <div class="metric-delta">Across all sections</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Sessions Today</div>
+    <div class="metric-value">{{ sessions_today }}</div>
+    <div class="metric-delta">Attendance marked today</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Avg. Attendance</div>
+    <div class="metric-value">{{ avg_attendance }}</div>
+    <div class="metric-delta">Sessions per student</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-label">Quizzes Taken</div>
+    <div class="metric-value">{{ quizzes_taken }}</div>
+    <div class="metric-delta">Class-wide total</div>
+  </div>
+</div>
+
+{% if pending_corrections or ungraded_tests or scheduled_announcements %}
+<div class="section">
+  <div class="section-label">Needs Attention</div>
+  <div class="pending-actions-row">
+    {% if pending_corrections %}
+    <a class="pending-action-chip" href="{{ url_for('corrections.queue') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#alert-triangle"></use></svg>
+      <span class="count">{{ pending_corrections }}</span> attendance correction{{ 's' if pending_corrections != 1 }} pending
+    </a>
+    {% endif %}
+    {% if ungraded_tests %}
+    <a class="pending-action-chip" href="{{ url_for('tests.index') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clipboard-list"></use></svg>
+      <span class="count">{{ ungraded_tests }}</span> test{{ 's' if ungraded_tests != 1 }} awaiting grading
+    </a>
+    {% endif %}
+    {% if scheduled_announcements %}
+    <a class="pending-action-chip" href="{{ url_for('announcements.index') }}">
+      <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#megaphone"></use></svg>
+      <span class="count">{{ scheduled_announcements }}</span> announcement{{ 's' if scheduled_announcements != 1 }} scheduled
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-1-1 section">
+  <div class="card">
+    <div class="card-header"><h3>Attendance by Student</h3></div>
+    <div class="card-body">
+      <div class="chart-container">
+        {% if attendance_chart.labels %}
+          <canvas id="attendanceChart"></canvas>
+        {% else %}
+          <div class="chart-empty">No attendance data yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Dropout Risk Distribution</h3></div>
+    <div class="card-body">
+      <div class="chart-container">
+        {% if risk_counts.High or risk_counts.Medium or risk_counts.Low %}
+          <canvas id="riskChart"></canvas>
+        {% else %}
+          <div class="chart-empty">No dropout assessments yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <div class="card-header"><h3>Quiz Score Distribution</h3></div>
+    <div class="card-body">
+      <div class="chart-container">
+        {% if score_buckets.values()|sum %}
+          <canvas id="scoreChart"></canvas>
+        {% else %}
+          <div class="chart-empty">No quiz results yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="card">
+    <div class="card-header"><h3>Recent Attendance Activity</h3></div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Student</th><th>Session</th></tr></thead>
+        <tbody>
+          {% for r in recent_logs %}
+          <tr>
+            <td>{{ r.timestamp.strftime('%b %d, %Y %H:%M').replace(' 0', ' ') if r.timestamp else '—' }}</td>
+            <td>{{ r.student_id }}</td>
+            <td>{{ r.session_name|default('Class Session') }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="table-empty">No attendance activity yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if attendance_chart.labels or risk_counts.High or risk_counts.Medium or risk_counts.Low or score_buckets.values()|sum %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/chart-init.js') }}"></script>
+<script>
+{% if attendance_chart.labels %}
+  new Chart(document.getElementById('attendanceChart'), {
+    type: 'bar',
+    data: {
+      labels: [{% for l in attendance_chart.labels %}"{{ l }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Sessions', data: [{% for v in attendance_chart.chart_values %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], backgroundColor: EduAIChartColors.accent, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+{% endif %}
+{% if risk_counts.High or risk_counts.Medium or risk_counts.Low %}
+  new Chart(document.getElementById('riskChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Low', 'Medium', 'High'],
+      datasets: [{
+        label: 'Students',
+        data: [{{ risk_counts.Low }}, {{ risk_counts.Medium }}, {{ risk_counts.High }}],
+        backgroundColor: [EduAIChartColors.success, EduAIChartColors.warning, EduAIChartColors.danger],
+        borderRadius: 4,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { grid: { color: EduAIChartColors.border } }, y: { grid: { display: false } } } }
+  });
+{% endif %}
+{% if score_buckets.values()|sum %}
+  new Chart(document.getElementById('scoreChart'), {
+    type: 'bar',
+    data: {
+      labels: [{% for k in score_buckets.keys() %}"{{ k }}"{{ ',' if not loop.last }}{% endfor %}],
+      datasets: [{ label: 'Students', data: [{% for v in score_buckets.values() %}{{ v }}{{ ',' if not loop.last }}{% endfor %}], backgroundColor: EduAIChartColors.accentSoft, borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: EduAIChartColors.border } }, x: { grid: { display: false } } } }
+  });
+{% endif %}
+</script>
+{% endif %}
+{% endblock %}

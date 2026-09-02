@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Tests · EduAI{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Custom Tests</h1>
+    <p class="text-sm" style="color:var(--text-muted);">{{ tests|length }} test{{ 's' if tests|length != 1 }}</p>
+  </div>
+  <a class="btn-primary" href="{{ url_for('tests.create') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#plus"></use></svg>
+    New Test
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Title</th><th>Subject</th><th>Questions</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tests %}
+        <tr>
+          <td>{{ t.title }}</td>
+          <td>{{ t.subject }}</td>
+          <td>{{ t.questions|length }}</td>
+          <td><span class="badge badge-{{ 'success' if t.status == 'published' else 'neutral' }}">{{ t.status|capitalize }}</span></td>
+          <td>{{ t.created_at.strftime('%b %d, %Y').replace(' 0', ' ') if t.created_at else '—' }}</td>
+          <td style="display:flex; gap:6px;">
+            {% if t.status == 'draft' %}
+            <a class="btn-ghost text-sm" href="{{ url_for('tests.build', test_id=t._id) }}">Continue Editing</a>
+            {% else %}
+            <a class="btn-ghost text-sm" href="{{ url_for('tests.results', test_id=t._id) }}">Results</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="table-empty">No tests created yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

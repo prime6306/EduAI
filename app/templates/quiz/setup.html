@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Quiz Setup · EduAI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="text-h1">Quiz &amp; Exam Simulator</h1>
+    <p class="text-sm" style="color:var(--text-muted);">Practice and self-assess with AI-generated MCQs.</p>
+  </div>
+  <a class="btn-secondary" href="{{ url_for('nlp.quiz_history') }}">
+    <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clock"></use></svg>
+    Quiz History
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3>Quiz Setup</h3></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('nlp.quiz') }}" id="quizForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="topic">Topic <span class="required">*</span></label>
+          <input class="form-control" id="topic" name="topic" type="text" value="{{ prefill_topic }}" placeholder="e.g. BJT Amplifiers" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="subject">Subject</label>
+          <input class="form-control" id="subject" name="subject" type="text" value="{{ prefill_subject }}" placeholder="e.g. Analog Electronics">
+        </div>
+      </div>
+      <div class="grid-1-1">
+        <div class="form-group">
+          <label class="form-label" for="branch">Branch</label>
+          <select class="form-control" id="branch" name="branch">
+            {% for value, label in branches %}
+            <option value="{{ value }}" {{ 'selected' if value == current_user.branch }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="year">Year</label>
+          <select class="form-control" id="year" name="year">
+            {% for value, label in years %}
+            <option value="{{ value }}" {{ 'selected' if value == current_user.year }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="num_questions">Number of Questions: <span id="numQLabel">10</span></label>
+        <input type="range" id="num_questions" name="num_questions" min="5" max="20" value="10"
+               style="width:100%; accent-color: var(--accent);"
+               oninput="document.getElementById('numQLabel').textContent = this.value">
+      </div>
+
+      <div class="checkbox-row" style="margin-bottom:24px;">
+        <input type="checkbox" id="timed" name="timed">
+        <label for="timed">Timed mode (2 minutes per question)</label>
+      </div>
+
+      <button type="submit" class="btn-primary btn-block btn-lg" id="generateQuizBtn">Generate Quiz</button>
+      {% include "partials/_usage_meter.html" %}
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loadingOverlay">
+  <div class="modal" style="width:340px;">
+    <div class="modal-body" style="text-align:center; padding: 32px 24px;">
+      <div class="spinner" style="width:32px;height:32px;border-color:var(--border-strong);border-top-color:var(--accent);margin:0 auto 16px;"></div>
+      <h3 class="text-h3" style="margin-bottom:6px;">Generating your quiz…</h3>
+      <p class="text-sm" style="color:var(--text-muted);">Writing and validating questions.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('quizForm').addEventListener('submit', function () {
+    document.getElementById('generateQuizBtn').classList.add('loading');
+    document.getElementById('loadingOverlay').classList.add('open');
+  });
+</script>
+{% endblock %}

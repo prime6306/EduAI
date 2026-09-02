@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{{ doc.title }} · EduAI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/quiz.css') }}">
+</head>
+<body class="quiz-page">
+  <div class="quiz-topbar">
+    <div class="quiz-topic">{{ doc.title }}</div>
+    <div class="quiz-progress" id="questionProgress">Question 1 of {{ questions|length }}</div>
+    {% if doc.time_limit_minutes %}
+      <div class="quiz-timer" id="quizTimer">
+        <svg class="icon icon-16" aria-hidden="true"><use href="{{ url_for('static', filename='icons/lucide.svg') }}#clock"></use></svg>
+        <span id="timerText">--:--</span>
+      </div>
+    {% else %}
+      <div></div>
+    {% endif %}
+  </div>
+
+  <div class="quiz-body">
+    <div class="quiz-question-area">
+      <div class="quiz-question-inner">
+        <div class="progress-track" style="margin-bottom: 24px;">
+          <div class="progress-fill" id="answeredProgress" style="width:0%;"></div>
+        </div>
+        <div class="qp-question-meta" id="questionMeta"></div>
+        <div class="quiz-question-text" id="questionText"></div>
+        <div id="optionsContainer"></div>
+        <div class="quiz-nav-row">
+          <button class="btn-secondary" id="prevBtn">Previous</button>
+          <button class="btn-ghost" id="flagBtn">Flag this question</button>
+          <button class="btn-secondary" id="nextBtn">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="quiz-palette">
+      <div>
+        <div class="text-2xs" style="color:var(--text-muted); text-transform:uppercase; margin-bottom:10px;">Questions</div>
+        <div class="palette-grid" id="paletteGrid"></div>
+      </div>
+      <div class="palette-legend">
+        <div class="item"><span class="dot" style="background:var(--success);"></span> Answered</div>
+        <div class="item"><span class="dot" style="background:var(--bg-surface-3); border:1px solid var(--border-strong);"></span> Unanswered</div>
+        <div class="item"><span class="dot" style="background:var(--warning);"></span> Flagged</div>
+      </div>
+      <div class="text-xs" id="autosaveNote" style="color:var(--text-disabled);"></div>
+      <button class="btn-primary btn-block" id="submitBtn">Submit Test</button>
+    </aside>
+  </div>
+
+  <script id="questionsData" type="application/json">{{ questions | tojson }}</script>
+  <script id="savedAnswersData" type="application/json">{{ saved_answers | tojson }}</script>
+  <script>
+    window.ATTEMPT_ID = {{ attempt_id | tojson }};
+    window.TIME_LIMIT_MINUTES = {{ doc.time_limit_minutes | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/test-take.js') }}"></script>
+</body>
+</html>
