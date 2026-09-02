@@ -6,7 +6,7 @@ __pycache__/
 *.pyc
 
 # Models & data (gitignored per spec — provided/generated separately)
-models/*.pkl
+
 models/*.p
 models/Images/*
 !models/Images/.gitkeep

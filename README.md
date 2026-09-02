@@ -1,234 +1,350 @@
 # EduAI
 
-An AI-powered educational platform for MMMUT: doubt solving, study material generation,
-quizzes, RAG-based document Q&A, face-recognition attendance, dropout risk prediction,
-a wellness companion, plagiarism detection, teacher analytics, and NBA-style CO-PO
-attainment reporting — built as a Flask app on MongoDB Atlas, per `EduAI_PROJECT_SPEC_v2-1.md`
-and `EduAI_DESIGN_SPEC.md`.
+EduAI is a full-stack educational operations and learning platform built with Flask and MongoDB Atlas. It unifies classroom administrative workflows (biometric attendance, syllabus tracking, question paper generation, grading) with machine learning tools (anti-spoof liveness detection, student dropout risk prediction, document Q&A via RAG, and AI-assisted mock interviews).
 
-## Build status — Phase 7 of N
+---
 
-This is a large, multi-phase build. **Phases 1–7 are fully working end-to-end:**
+## Table of Contents
 
-**Phase 1 — Foundation:** app factory, Mongo wrapper, auth (bcrypt + Flask-Login +
-JWT + roles + audit log), role-aware dashboards, full design system, auto-training
-Dropout classifiers, Docker/compose.
+- [Overview](#overview)
+- [Key Features](#key-features)
+  - [1. Attendance & Biometric Verification](#1-attendance--biometric-verification)
+  - [2. Academic & Teaching Tools](#2-academic--teaching-tools)
+  - [3. Assessment & Examination](#3-assessment--examination)
+  - [4. Student Risk & Analytics](#4-student-risk--analytics)
+  - [5. Learning Assistants & Career Prep](#5-learning-assistants--career-prep)
+- [System Architecture](#system-architecture)
+- [Directory Structure](#directory-structure)
+- [Installation & Setup](#installation--setup)
+  - [Prerequisites](#prerequisites)
+  - [Local Setup](#local-setup)
+  - [Windows-Specific Notes](#windows-specific-notes)
+- [Configuration Reference (.env)](#configuration-reference-env)
+- [Machine Learning & Model Training](#machine-learning--model-training)
+  - [Anti-Spoofing Model (MobileNetV2 + ResNet18)](#anti-spoofing-model-mobilenetv2--resnet18)
+  - [Dropout Prediction Models](#dropout-prediction-models)
+  - [RAG & Vector Search](#rag--vector-search)
+- [CLI Tools](#cli-tools)
+- [Docker Deployment](#docker-deployment)
+- [Troubleshooting](#troubleshooting)
 
-**Phase 2 — Core AI:** Doubt Solver (SSE streaming chat), Study Material Generator
-(full pipeline + PDF export), Quiz & Exam Simulator (server-graded, timed mode).
+---
 
-**Phase 3 — RAG + Attendance:** PDF/DOCX/TXT/MD Q&A with ChromaDB + grounding
-scores; face-recognition attendance (group photo + webcam) with anti-spoof gating
-and cooldown; full Student Management (enroll, re-encode, delete, CSV export, CLI).
+## Overview
 
-**Phase 4 — Dropout UI, Wellness, Plagiarism:** full prediction form + batch CSV +
-retraining wired to the real trained models; Wellness Companion with verified
-crisis helplines and LLM-bypassing crisis detection; dual-method Plagiarism
-Detector reusing RAG's text/embedding pipeline.
+EduAI is designed for colleges and universities to reduce manual administrative overhead while providing students with targeted learning and assessment tools. The platform enforces strict role-based access control (Student, Teacher, Admin), audit-logs sensitive operations, and gracefully degrades when optional external API keys (e.g. YouTube, Google Search, Gemini) are not provided.
 
-**Phase 5 — Announcements, Syllabus Tracker, Question Paper Generator:** rich-text
-announcements with live scheduling and an unread badge; syllabus pace tracking
-with a verified working NAAC PDF export; multi-set question papers with verified
-PDF + DOCX export and an auto-populating, deduplicated question bank.
+---
 
-**Phase 6 — Custom Test Creator:** AI/bank/manual question builder, drag-reorder,
-publishing with per-student assignment and shuffling, a distraction-free timed
-test-taking UI with autosave, instant auto-grading for MCQ/True-False, and a
-teacher review queue for descriptive answers with live score recomputation.
+## Key Features
 
-**Phase 7 — Attendance Corrections + Report Card Generator**
-- ✅ **Attendance Correction Requests** (`/attendance/corrections`) — a structured
-  replacement for WhatsApp-based fix requests. Every guard from the spec is
-  enforced server-side, not just suggested in the UI: no request for a date
-  more than 30 days old, no request for a date already marked present, and a
-  hard cap of 2 requests/week — **all three verified with actual boundary-testing
-  requests that were expected to fail and did**. Approval creates a real
-  attendance log entry tagged "Manual correction" (verified the attendance
-  count actually incremented), rejection requires a reason, bulk approve/reject
-  work from the teacher queue, and both a sidebar-adjacent dashboard chip and a
-  student dashboard notification are wired end-to-end
-- ✅ **Report Card Generator** (`/report-cards`) — batch creation prefilled from
-  the live student roster, marks entry via CSV import or an inline-autosaving
-  grid, configurable score weightages (IA/quiz/attendance) with live-updating
-  grading tiers, template or AI-generated remarks, and PDF + ZIP export that
-  I verified by **hand-checking the actual computed numbers** — a synthetic
-  student with 95%/100% IA scores, a 90% quiz average, and 90% attendance
-  computed to exactly 93.0% overall and grade A+ under a 40/30/30 weighting,
-  matching the math by hand before trusting the code
-- ✅ **A real, previously-undiscovered bug got caught and fixed this round**:
-  the teacher dashboard's attendance chart silently 500'd whenever real
-  attendance data existed, because a dict key named `values` collided with
-  Python's `dict.values()` method under Jinja's attribute-lookup rules — every
-  earlier regression pass had missed it because no test had ever populated
-  real attendance numbers before. Renamed the key, verified the chart renders.
+### 1. Attendance & Biometric Verification
+- **Webcam & Batch Attendance:** Captures single-student or group photos and detects/recognizes faces using `face_recognition` (dlib) against a cached encoding bank (`models/ENcodedFile.p`).
+- **Anti-Spoof Liveness Detection:** Employs a dual-backbone deep neural network (MobileNetV2 + ResNet18) that validates presentation liveness on 160×160 RGB face crops to prevent photo, screen, and replay attacks.
+- **Attendance Correction Workflow:** Students can file formal attendance dispute requests with strict operational guardrails (maximum 30-day lookback, no duplicate marks, 2 requests/week limit). Teachers review, approve, or reject with mandatory audit remarks.
+- **Roster Management:** Web-based and CLI student onboarding, face image enrollment, re-encoding pipelines, and attendance log CSV export.
 
-**Not yet implemented** (placeholder pages): Study Planner, CO-PO Attainment
-Mapping, Weekly Digest, Teacher Analytics detail pages, rate limiting, and the
-audit-log viewer UI.
+### 2. Academic & Teaching Tools
+- **Syllabus Tracker:** Module-by-module syllabus completion tracker with hours logged, faculty pacing metrics, and automated NAAC-compliant PDF export.
+- **Question Paper Generator:** Multi-set exam generator mapping questions across Bloom's Taxonomy levels (Remember, Understand, Apply, Analyze, Evaluate) with automated deduplication and DOCX/PDF export.
+- **Announcements Engine:** Targeted announcements with rich text formatting, scheduled release dates, audience scoping (branch/year/role), and unread indicators.
+- **Report Card Generator:** Automated grade sheet generator with configurable weightages for internal assessments, quizzes, and attendance. Supports inline autosaving mark entry grids, batch CSV imports, and ZIP archives containing individualized student PDFs.
+- **CO-PO Attainment:** Calculates direct and indirect Course Outcome (CO) and Program Outcome (PO) attainment percentages against NBA/NAAC threshold targets.
 
-What's left is CO-PO Attainment Mapping and Weekly Digest (the last two teacher
-reporting tools), plus the smaller Study Planner, Teacher Analytics detail pages,
-rate limiting, and the audit-log viewer — ask me to continue with whichever
-matters most next.
+### 3. Assessment & Examination
+- **Custom Test Creator:** Build quizzes and tests manually, pull from the shared question bank, or generate questions via LLM.
+- **Student Exam Interface:** Distraction-free, timed examination UI featuring autosave, question palette navigation, and client-side heartbeat.
+- **Hybrid Grading Queue:** Instant auto-grading for objective questions (MCQs, True/False) combined with a teacher evaluation queue for subjective short/long answers.
 
-## Quick start
+### 4. Student Risk & Analytics
+- **Early Dropout Risk Prediction:** Evaluates academic performance, attendance records, parental education, and socio-economic signals using an ensemble of Random Forest and Logistic Regression classifiers. Highlights key risk drivers and tailored intervention recommendations.
+- **Faculty Analytics Dashboard:** Real-time metrics on class performance distributions, attendance anomalies, at-risk student cohorts, and exam statistics.
+- **Plagiarism Checker:** Dual-engine similarity inspection combining fuzzy n-gram lexical matching with dense semantic embeddings from `sentence-transformers`.
 
-```bash
-python3 -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+### 5. Learning Assistants & Career Prep
+- **Interactive Doubt Solver:** Real-time conversational tutoring with server-sent events (SSE) streaming, Markdown rendering, and LaTeX formula support via KaTeX.
+- **RAG Document Assistant:** Upload lecture notes and textbooks (PDF, DOCX, TXT) into a local ChromaDB vector store. Provides cited answers along with retrieval hallucination scores.
+- **Study Material Generator:** Produces structured study guides, flashcards, summaries, and reading lists with optional embedded YouTube lectures and web references.
+- **AI Mock Interview Simulator:** Dual-recruiter technical and behavioral interview preparation:
+  - **HR Round:** Managed by conversational recruiter persona on Groq.
+  - **Technical Round:** Managed by technical lead persona on Gemini.
+  - Tracks answer clarity, technical depth, filler word frequency, and generates a structured performance report.
+- **Wellness Companion:** Guided student support with strict safety guardrails that bypass external LLMs to immediately display verified national helpline contacts upon detecting crisis triggers.
 
-cp .env.example .env
-# then edit .env — at minimum set MONGODB_URI to your Atlas connection string
-# and FLASK_SECRET_KEY / JWT_SECRET_KEY to random values
+---
 
-python run.py
-# → http://localhost:5000
+## System Architecture
+
+```
+                                  +-----------------------+
+                                  |   Browser / Client    |
+                                  +-----------+-----------+
+                                              |
+                                              | HTTP / JSON / SSE
+                                              v
++---------------------------------------------------------------------------------+
+|                               EduAI Flask Application                           |
+|                                                                                 |
+|  +-------------------+  +--------------------+  +----------------------------+  |
+|  |   Auth & RBAC     |  |   Core Blueprints  |  |     ML & Vision Pipelines  |  |
+|  | Flask-Login / JWT |  | Attendance, Tests, |  | dlib (Face Recognition)    |  |
+|  | CSRFProtect       |  | RAG, Syllabus, etc |  | PyTorch (Anti-Spoof PAD)   |  |
+|  +---------+---------+  +---------+----------+  | Scikit-Learn (Dropout)     |  |
+|            |                      |             +--------------+-------------+  |
++------------|----------------------|----------------------------|----------------+
+             |                      |                            |
+             v                      v                            v
+   +-------------------+  +--------------------+       +-------------------+
+   |   MongoDB Atlas   |  |  ChromaDB (Vector) |       | Pretrained Models |
+   |  Users, Logs,     |  |  Document chunks   |       | .pkl / .p weights |
+   |  Rosters, Quizzes |  |  & embeddings      |       | on local disk     |
+   +-------------------+  +--------------------+       +-------------------+
 ```
 
-The app boots and serves pages even if some `.env` values are left blank —
-Mongo-backed reads degrade to empty states, and AI-backed modules will simply
-say so once you reach them, rather than crashing the whole app.
+---
 
-### Anti-spoof model
+## Directory Structure
 
-`app/modules/attendance/antispoof.py` only ever **loads** the anti-spoof ensemble —
-it does not train one. Drop your pretrained `.pkl` at the path in
-`ANTISPOOF_MODEL_PATH` (default: `./models/antispoof_fullmodels.pkl`).
+```
+eduai/
+├── app/
+│   ├── auth/                 # Authentication, user loaders, RBAC decorators
+│   ├── dashboard/            # Role-specific routing (Student, Teacher, Admin)
+│   ├── modules/
+│   │   ├── admin/            # Audit logs and system administration
+│   │   ├── analytics/        # Class performance & attendance trends
+│   │   ├── announcements/    # Notice board with scheduling
+│   │   ├── attendance/       # Face matching, liveness check, correction flows
+│   │   ├── co_po/            # NBA/NAAC outcome attainment calculators
+│   │   ├── digest/           # Automated email reporting
+│   │   ├── dropout/          # ML dropout risk prediction & batch scoring
+│   │   ├── interview/        # Dual-persona AI mock interview engine
+│   │   ├── nlp/              # Doubt solver, study notes, quiz generator
+│   │   ├── plagiarism/       # Lexical & semantic text comparison
+│   │   ├── question_paper/   # Exam question paper compilation & export
+│   │   ├── rag/              # Document upload, vector indexing, retrieval
+│   │   ├── report_cards/     # Weighted marks calculation & PDF generation
+│   │   ├── syllabus/         # Course tracking & NAAC report export
+│   │   ├── tests/            # Exam authoring, test runner, evaluation
+│   │   └── wellness/         # Mental wellness assistant & safety triggers
+│   ├── static/               # CSS stylesheets, vanilla JS modules, SVG icons
+│   ├── templates/            # Jinja2 templates organized by module
+│   ├── utils/                # Audit logger, export helpers, decorators
+│   ├── config.py             # Central application configuration
+│   └── extensions.py         # Mongo wrapper, login manager, CSRF, mail
+├── docker/                   # Dockerfile and docker-compose configurations
+├── models/                   # Serialized ML models (.pkl, .p)
+├── scripts/
+│   ├── add_student.py        # CLI for roster registration & face enrollment
+│   ├── fetch_datasets.py     # Automated dataset downloader (Kaggle / direct)
+│   ├── create_dataset.py     # Video/image frame extraction & 160x160 face cropper
+│   └── train_antispoof.py    # PyTorch training script for anti-spoof ensemble
+├── run.py                    # Application entrypoint
+├── requirements.txt          # Python dependencies
+└── .env.example              # Environment variables template
+```
 
-### AI features (Doubt Solver, Study Material, Quiz, RAG Q&A)
+---
 
-These call the Groq API and, for Study Material, optionally the YouTube Data API
-and Google Custom Search. Set `GROQ_API_KEY` in `.env` to enable them — without it,
-each feature shows a clear "AI features are not configured" message instead of
-erroring. `YOUTUBE_API_KEY` / `GOOGLE_API_KEY` + `GOOGLE_SEARCH_ENGINE_ID` are
-optional; Study Material works fine without them, just without embedded videos/
-articles.
+## Installation & Setup
 
-### RAG Q&A
+### Prerequisites
+- **Python:** 3.10 to 3.12
+- **MongoDB:** A MongoDB Atlas URI or a local MongoDB instance (v6.0+)
+- **Build Tools (Windows):** Visual Studio C++ Build Tools (required for `dlib`)
+- **Git & Git LFS:** For cloning repository and downloading model weights
 
-First use downloads the `sentence-transformers` embedding model (~90MB) and
-initialises a local ChromaDB store at `CHROMA_PATH` (default `./chromadb_data`) —
-both fully local after that, no API key needed for retrieval itself (only for the
-answer-generation and hallucination-scoring calls, which use Groq).
+### Local Setup
 
-### Attendance / face recognition
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/prime6306/EduAI.git
+   cd EduAI
+   git lfs pull
+   ```
 
-`face_recognition` (which wraps `dlib`) and `torch` are native/heavy dependencies.
-This build's routes and business logic (matching, cooldown, anti-spoof gating,
-enrollment, re-encoding) are fully implemented and were verified end-to-end with
-mocked face/anti-spoof functions, since this development sandbox couldn't install
-`dlib`/`torch` itself — you'll want to smoke-test the real `face_recognition` and
-anti-spoof inference paths in your own environment before relying on them in
-production. If your anti-spoof `.pkl`'s structure differs from the dict-of-models
-or single-model convention assumed in `app/modules/attendance/antispoof.py`, that
-file's `predict_is_real()` is the only place you'll need to adjust.
+2. **Create and activate a virtual environment:**
+   ```bash
+   # Linux/macOS
+   python3 -m venv .venv
+   source .venv/bin/activate
 
-### Wellness Companion
+   # Windows (PowerShell)
+   python -m venv .venv
+   .venv\Scripts\Activate.ps1
+   ```
 
-Crisis keyword detection short-circuits the LLM entirely and always shows the
-helplines in `app/modules/wellness/routes.py` (`HELPLINES`) — verified in testing
-that a crisis message never reaches Groq. The helpline numbers were checked
-against current public sources as of this build, not just copied from the spec;
-worth a periodic re-check since helpline numbers do change.
+3. **Install dependencies:**
+   ```bash
+   pip install --upgrade pip setuptools wheel
+   pip install -r requirements.txt
+   ```
 
-### Fonts
+4. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
+   ```
+   Open `.env` and configure your database URI, secret keys, and API credentials (see [Configuration Reference](#configuration-reference-env)).
 
-`static/css/main.css` expects a self-hosted Inter variable font at
-`static/fonts/Inter/Inter-Variable.woff2` (and JetBrains Mono similarly) for full
-offline support. Until you add those files, the browser falls back to the
-platform UI font, which looks close but isn't pixel-identical to the spec.
+5. **Start the application:**
+   ```bash
+   python run.py
+   ```
+   Open your browser at `http://localhost:5000`.
 
-## Docker
+---
+
+### Windows-Specific Notes
+
+- **dlib DLL Initialization:** On Windows, `dlib`'s native C++ runtime can encounter thread initialization issues if imported inside secondary Flask worker threads. `run.py` and `app/__init__.py` include eager initialization at process launch to ensure `_dlib_pybind11` loads on the primary thread.
+- **C++ Build Tools:** If installing `dlib` from source on Windows, install the "Desktop development with C++" workload from Visual Studio Installer. Pre-built wheels for Python 3.10–3.12 can also be installed directly.
+
+---
+
+## Configuration Reference (.env)
+
+| Variable | Required | Default | Purpose |
+| :--- | :--- | :--- | :--- |
+| `FLASK_SECRET_KEY` | **Yes** | — | Flask session encryption key |
+| `FLASK_DEBUG` | No | `false` | Enable/disable Flask debug mode |
+| `FLASK_PORT` | No | `5000` | Port for the web application |
+| `MONGODB_URI` | **Yes** | — | MongoDB Atlas connection string |
+| `MONGODB_DB` | No | `eduai` | Database name |
+| `JWT_SECRET_KEY` | **Yes** | — | Secret key for JWT signing |
+| `JWT_ACCESS_TOKEN_EXPIRES_HOURS` | No | `24` | Token lifespan in hours |
+| `GROQ_API_KEY` | Recommended | — | Key for doubt solver, study notes, quiz generator |
+| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Model ID for Groq completions |
+| `GEMINI_API_KEY` | Optional | — | Enables Interview Prep's technical interviewer |
+| `GEMINI_MODEL` | No | `gemini-2.5-flash` | Model ID for Google Gemini |
+| `EMBEDDING_MODEL` | No | `sentence-transformers/all-MiniLM-L6-v2` | SentenceTransformer model name |
+| `CHROMA_PATH` | No | `./chromadb_data` | Persistent path for local vector database |
+| `ANTISPOOF_MODEL_PATH` | No | `./models/antispoof_fullmodels.pkl` | Path to trained anti-spoof model weights |
+| `FACE_ENCODINGS_PATH` | No | `./models/ENcodedFile.p` | Path to cached student face encodings |
+| `YOUTUBE_API_KEY` | Optional | — | Fetches video lecture recommendations |
+| `GOOGLE_API_KEY` | Optional | — | Enables article lookup in Study Material |
+| `GOOGLE_SEARCH_ENGINE_ID`| Optional | — | Custom search engine ID |
+| `MAIL_SERVER` | Optional | — | SMTP host for weekly email digests |
+| `MAIL_PORT` | Optional | `587` | SMTP port |
+| `MAIL_USERNAME` | Optional | — | SMTP account username |
+| `MAIL_PASSWORD` | Optional | — | SMTP account password / app password |
+| `DIGEST_SCHEDULER_ENABLED`| No | `true` | Starts background weekly digest scheduler |
+
+---
+
+## Machine Learning & Model Training
+
+EduAI includes standalone scripts to train and evaluate the machine learning models.
+
+### Anti-Spoofing Model (MobileNetV2 + ResNet18)
+
+The anti-spoofing module prevents presentation attacks using an ensemble of MobileNetV2 and ResNet18. Input crops must be 160×160 RGB images normalized with standard ImageNet statistics.
+
+#### 1. Download Public PAD Datasets
+Use `scripts/fetch_datasets.py` to retrieve public datasets (requires Kaggle API credentials):
+```bash
+# Download Real vs Fake Video Anti-Spoofing dataset
+python scripts/fetch_datasets.py --dataset real-vs-fake --dest ./datasets/real_vs_fake
+
+# Download CelebA-Spoof mirror
+python scripts/fetch_datasets.py --dataset celeba-spoof --dest ./datasets/celeba_spoof
+```
+
+#### 2. Process & Crop Faces (160×160)
+Extract faces from raw videos or photos into normalized train/val splits:
+```bash
+# Process video files (reads metadata CSVs or folder structures)
+python scripts/create_dataset.py --mode videos --input-dir ./datasets/real_vs_fake --output-dir ./datasets/processed_pad --frame-interval 8
+
+# Create a balanced subset from CelebA-Spoof
+python scripts/create_dataset.py --mode celeba-subset --input-dir ./datasets/celeba_spoof --output-dir ./datasets/processed_pad --max-per-class 2500
+```
+
+#### 3. Train the Ensemble
+Train locally or on Google Colab with GPU acceleration:
+```bash
+python scripts/train_antispoof.py \
+  --data-dir ./datasets/processed_pad \
+  --model ensemble \
+  --epochs 6 \
+  --batch-size 32 \
+  --lr 0.0003 \
+  --output ./models/antispoof_fullmodels.pkl
+```
+The script evaluates standard Presentation Attack Detection metrics (Accuracy, APCER, BPCER, and ACER) and automatically restores the best validation checkpoint before saving.
+
+---
+
+### Dropout Prediction Models
+
+The dropout module predicts student risk levels (`Low`, `Medium`, `High`) and suggests remedial interventions:
+- **Algorithms:** Random Forest and Logistic Regression trained on academic history, attendance statistics, and demographic features.
+- **Retraining:** Teachers can retrain the model directly from the web interface (`/dropout/retrain`) or let the application auto-initialize baseline weights on first startup (`app.modules.dropout.model.ensure_models_trained`).
+- **Artifacts:**
+  - `models/dropout_rf.pkl`
+  - `models/dropout_lr.pkl`
+  - `models/dropout_selector.pkl`
+
+---
+
+### RAG & Vector Search
+
+- **Embedding Model:** `sentence-transformers/all-MiniLM-L6-v2` (runs locally, 384-dimensional dense vectors).
+- **Storage:** Persistent ChromaDB collections stored at `CHROMA_PATH`.
+- **Query Pipeline:** Cosine similarity retrieval with top-k ranking, context assembly, grounding validation, and hallucination scoring.
+
+---
+
+## CLI Tools
+
+### Student Onboarding & Face Registration
+Enroll students and build the facial encodings database without using the browser:
+
+```bash
+# Register a student and enroll their face photo
+python scripts/add_student.py --id 2024CS101 --name "Rahul Sharma" --branch CS --year 2 --photo ./student_photos/rahul.jpg
+
+# List all enrolled students
+python scripts/add_student.py --list
+
+# List students with enrolled face vectors
+python scripts/add_student.py --list-faces
+```
+
+---
+
+## Docker Deployment
+
+To spin up EduAI and a local MLflow tracking server using Docker Compose:
 
 ```bash
 cd docker
-docker compose up --build
-# app on :5000, local MLflow UI on :5001
+docker compose up --build -d
 ```
 
-MongoDB itself is expected to be Atlas (cloud) per the spec, so it's not a
-compose service — point `MONGODB_URI` in `.env` at your cluster. See the
-comment in `docker/docker-compose.yml` if you'd rather run Mongo locally.
+- **Web Application:** `http://localhost:5000`
+- **MLflow Tracking Dashboard:** `http://localhost:5001`
 
-## Project layout
+*Note: The Docker setup connects to your MongoDB Atlas cluster configured in `.env`.*
 
-```
-app/
-  auth/            # register/login/logout/profile
-  dashboard/        # role-aware dashboard
-  modules/          # one folder per feature (nlp, rag, attendance, dropout, ...)
-  static/           # css/js/icons/fonts
-  templates/        # Jinja templates, mirrors modules/
-  utils/            # audit log + other cross-cutting helpers
-  config.py
-  extensions.py     # Mongo wrapper, Flask-Login, JWT, CSRF
-  __init__.py       # app factory
-run.py
-requirements.txt
-docker/
-```
+---
 
-## Interview Prep — AI mock interviews (`app/modules/interview/`)
+## Troubleshooting
 
-Integrated from a standalone Interview Accelerator prototype into a full EduAI
-module: EduAI design system, login-gated, MongoDB-backed, rate-limited and
-audit-logged like every other AI feature here.
+### "The CSRF session token is missing" on JSON API calls
+Ensure your requests include the CSRF token in the `X-CSRFToken` header. The frontend helper `window.apiFetch()` automatically reads the `<meta name="csrf-token">` tag and attaches this header to all `fetch` calls.
 
-**The two-recruiter design.** Rather than one chatbot playing two roles, the
-mock interview is run by two personas on two *different* model providers, so
-they never end up sounding like the same voice twice:
+### Anti-Spoof Model Loading (`_pickle.UnpicklingError` / `weights_only`)
+PyTorch 2.6+ changed the default parameter of `torch.load` to `weights_only=True`. The loader in `app/modules/attendance/antispoof.py` explicitly handles `weights_only=False` with backward-compatible fallbacks.
 
-- **Priya Menon** — Talent Acquisition Partner — runs on **Groq** (warm,
-  conversational). Owns the Screening round end-to-end, half the Competency
-  round, and comes back for the closing question.
-- **Arjun Rao** — Senior Technical Lead — runs on **Gemini** (precise,
-  probing). Owns the technical half of Competency and all of Deep-Dive.
-
-Persona routing is deterministic (`personas.persona_for_slot`), not left to
-the LLM to decide: Screening = A,A,A · Competency = A,B,A,B · Deep-Dive =
-B,B,B,**A** (HR closes it out) — mirroring a real HR-screen → panel →
-technical-deep-dive → HR-wrapup loop. Whichever persona asks a question also
-grades that answer, so judgement work splits naturally across both models;
-one-off tasks (JD/resume analysis, job-fit score, prep plan) are split
-explicitly between the two in `analysis_service.py` / `evaluation_service.py`.
-
-**Resilience.** `llm_router.py` tries a persona's assigned provider first and
-falls back to the *other* configured provider (same persona/prompt, different
-model) if that one is missing or errors — the interview only actually stops
-if neither `GROQ_API_KEY` nor `GEMINI_API_KEY` works. Prompts in
-`prompts.py` were written specifically to avoid the "reads like a form"
-failure mode of LLM interview questions — verbatim anti-repetition, in-persona
-example questions, a cliché ban list, and reactions grounded in the
-candidate's actual last answer text, not just its score.
-
-**Access model:** both students and teachers can start their own practice
-interview (`interview_session` rate limit: 3/day student, unlimited teacher).
-Teachers additionally get a class-wide "Class Interview Reports" table
-(`GET /interview`) and can leave a saved personalised comment on any
-student's completed report (`POST /api/interview/<id>/feedback`).
-
-Env vars: `GEMINI_API_KEY` / `GEMINI_MODEL` (optional — degrades to running
-both personas on Groq alone if unset, see `llm_router.py`).
-
-**Known gap:** voice (Web Speech API, `interview-voice.js`) only works in
-Chrome/Edge — Firefox/Safari users fall back to typing automatically, but
-there's no in-UI notice explaining *why* the mic button is disabled for them
-yet.
-
-## Testing this phase yourself
-
+### OpenCV Headless in Colab
+If you encounter `AttributeError: module 'cv2' has no attribute 'CascadeClassifier'` in headless server environments, run:
 ```bash
-pip install mongomock pytest   # only needed to run the test suite / smoke-test without a real Atlas cluster
-pytest tests/                  # full suite, including tests/test_interview.py
+pip install --upgrade --force-reinstall opencv-python-headless
 ```
+`scripts/create_dataset.py` includes a safe fallback to smart portrait center-cropping if Haar cascades are unavailable.
 
-`tests/conftest.py` stubs the heavy native deps (torch/dlib/face_recognition/
-chromadb/...) that this sandbox can't install and swaps in `mongomock` for
-Mongo — none of those stubs are imported at module load time anywhere in the
-app, only inside functions this suite never calls, so stubbing them doesn't
-hide bugs in those features. `tests/test_interview.py` drives the Interview
-Prep module end-to-end (analysis → all 11 questions across both personas →
-report → teacher feedback) with the LLM calls mocked, plus unit tests for the
-Groq/Gemini fallback logic. This is exactly how every phase of this build,
-including this one, was verified before being handed to you.
+---
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
